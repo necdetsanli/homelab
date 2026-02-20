@@ -42,6 +42,9 @@ spec:
     # Network policies (all platform namespaces)
     - group: "networking.k8s.io"
       kind: "NetworkPolicy"
+    # Cilium-native network policies (enterprise-grade: fromEntities support)
+    - group: "cilium.io"
+      kind: "CiliumNetworkPolicy"
     # ArgoCD config (argocd namespace)
     - group: ""
       kind: "ConfigMap"

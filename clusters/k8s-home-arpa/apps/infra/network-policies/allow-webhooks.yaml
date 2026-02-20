@@ -1,73 +1,67 @@
 # Allow Kubernetes API server to reach validating/mutating webhooks.
-# The API server runs on the host network (node IPs: 192.168.20.0/24),
-# so we must explicitly allow ingress from that CIDR to webhook ports.
-# Without this, default-deny blocks webhook calls → admission failures.
+# Uses CiliumNetworkPolicy with fromEntities: kube-apiserver for precise
+# eBPF-level identity matching — immune to SNAT, no IP guessing.
+# This is the enterprise-grade approach for Cilium CNI clusters.
 ---
 # MetalLB controller webhook (port 9443)
 # Validates: IPAddressPool, L2Advertisement, BGPPeer, etc.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+# MetalLB uses bare "component: controller" labels (NOT app.kubernetes.io/)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
 metadata:
   name: allow-apiserver-webhook
   namespace: metallb-system
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  podSelector:
+  endpointSelector:
     matchLabels:
-      app.kubernetes.io/component: controller
+      component: controller
   ingress:
-    - from:
-        - ipBlock:
-            cidr: 192.168.20.0/24
-      ports:
-        - port: 9443
-          protocol: TCP
-  policyTypes:
-    - Ingress
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "9443"
+              protocol: TCP
 ---
 # cert-manager webhook (port 10250)
 # Validates: Certificate, Issuer, ClusterIssuer, etc.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
 metadata:
   name: allow-apiserver-webhook
   namespace: cert-manager
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  podSelector:
+  endpointSelector:
     matchLabels:
-      app.kubernetes.io/component: webhook
+      app.kubernetes.io/component: "webhook"
   ingress:
-    - from:
-        - ipBlock:
-            cidr: 192.168.20.0/24
-      ports:
-        - port: 10250
-          protocol: TCP
-  policyTypes:
-    - Ingress
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "10250"
+              protocol: TCP
 ---
-# cert-manager main controller (port 9402 — metrics/healthz)
-# and cainjector may need API server callbacks
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+# cert-manager controller (port 9402 — metrics/healthz, liveness probes)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
 metadata:
   name: allow-apiserver-controller
   namespace: cert-manager
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  podSelector:
+  endpointSelector:
     matchLabels:
-      app.kubernetes.io/component: controller
+      app.kubernetes.io/component: "controller"
   ingress:
-    - from:
-        - ipBlock:
-            cidr: 192.168.20.0/24
-      ports:
-        - port: 9402
-          protocol: TCP
-  policyTypes:
-    - Ingress
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "9402"
+              protocol: TCP

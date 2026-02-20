@@ -82,6 +82,9 @@ spec:
       kind: "Ingress"
     - group: "networking.k8s.io"
       kind: "NetworkPolicy"
+    # Cilium-native network policies (enterprise-grade: fromEntities support)
+    - group: "cilium.io"
+      kind: "CiliumNetworkPolicy"
     - group: "policy"
       kind: "PodDisruptionBudget"
     - group: "autoscaling"
