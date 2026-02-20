@@ -27,6 +27,9 @@ spec:
       namespace: "security"
     - server: "https://kubernetes.default.svc"
       namespace: "argocd"
+    # cert-manager needs leader election Roles/RoleBindings in kube-system
+    - server: "https://kubernetes.default.svc"
+      namespace: "kube-system"
 
   # Cluster-scoped resources: strict allow-list
   clusterResourceWhitelist:
