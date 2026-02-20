@@ -1,0 +1,252 @@
+# ==============================================================================
+# Public Homelab GitOps .gitignore (security-first)
+# - Keep only public-safe, reproducible config in Git
+# - Never commit secrets, private keys, tokens, kubeconfigs, or state
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Secrets / Env
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.sample
+
+# Common secret directories (keep templates elsewhere)
+secrets/
+secret/
+private/
+pki/
+certs/
+keys/
+ssl/
+tls/
+vault-data/
+
+# Private key / certificate / keystore formats
+*.key
+*.key.*
+*.pem
+*.pem.*
+*.pfx
+*.p12
+*.jks
+*.crt
+*.crt.*
+*.csr
+*.der
+*.keystore
+
+# Client profiles / device configs
+*.ovpn
+*.mobileconfig
+
+# Kubernetes kubeconfigs
+*.kubeconfig
+kubeconfig
+**/kubeconfig
+**/kubeconfig.*
+/etc/rancher/**
+
+# Vault tokens / sensitive local files
+.vault-token
+vault.hcl
+
+# ------------------------------------------------------------------------------
+# SOPS / AGE / GPG (configs are safe to commit; keys are NOT)
+# ------------------------------------------------------------------------------
+# SOPS config SHOULD be committed:
+!.sops.yaml
+!.sops.yml
+
+# Encryption keys and private material
+*.age
+*.agekey
+*.gpg
+*.pgp
+*.asc
+
+# ------------------------------------------------------------------------------
+# Config files (commit ONLY templates/examples)
+# ------------------------------------------------------------------------------
+*.cfg
+*.conf
+*.ini
+*.config
+*.cnf
+
+# Allow public-safe templates/examples
+!**/*.example
+!**/*.template
+!**/*.sample
+
+# ------------------------------------------------------------------------------
+# Logs / Runtime state / Temporary files
+# ------------------------------------------------------------------------------
+logs/
+log/
+*.log
+*.log.*
+*.out
+*.err
+
+data/
+state/
+run/
+tmp/
+temp/
+.cache/
+cache/
+*.tmp
+*.swp
+*.swo
+
+# Common daemon/runtime artifacts
+*.pid
+*.sock
+haproxy.pid
+
+# Databases / local storage
+*.db
+*.sqlite
+*.sqlite3
+*.rdb
+dump.rdb
+appendonly.aof
+
+# ------------------------------------------------------------------------------
+# Docker / Containers
+# ------------------------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.override.yaml
+compose.override.yml
+compose.override.yaml
+
+**/dist/
+**/build/
+**/target/
+**/*.tar
+**/*.tar.gz
+**/*.tgz
+
+# ------------------------------------------------------------------------------
+# Terraform / IaC
+# ------------------------------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.template
+
+# Terragrunt
+.terragrunt-cache/
+
+# Pulumi
+.pulumi/
+Pulumi.*.yaml
+!Pulumi.*.example.yaml
+
+# ------------------------------------------------------------------------------
+# Ansible
+# ------------------------------------------------------------------------------
+*.retry
+ansible/*.retry
+
+# Keep custom roles/playbooks in Git; ignore downloaded vendor collections
+ansible/collections/ansible_collections/
+
+# Inventory should be templated (no real hosts/secrets)
+ansible/inventory/*
+!ansible/inventory/*.example
+!ansible/inventory/*.template
+
+# Optional: ignore role build/cache artifacts
+ansible/roles/**/.cache/
+ansible/roles/**/.tmp/
+
+# ------------------------------------------------------------------------------
+# Kubernetes / Helm
+# ------------------------------------------------------------------------------
+charts/**/charts/
+charts/**/tmp/
+helmfile*.lock
+*.tgz
+
+# ------------------------------------------------------------------------------
+# CI / Scanners outputs
+# ------------------------------------------------------------------------------
+coverage/
+.nyc_output/
+*.lcov
+*.sarif
+*.spdx
+*.bom
+*.sbom
+reports/
+report/
+
+# ------------------------------------------------------------------------------
+# OS / Editor
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+.idea/
+*.iml
+
+# ------------------------------------------------------------------------------
+# Node / Python / Go (common DevOps tooling)
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+pip-wheel-metadata/
+
+# Go
+bin/
+pkg/
+*.exe
+*.test
+*.prof
+
+# ------------------------------------------------------------------------------
+# SSH keys / known hosts (never commit)
+# ------------------------------------------------------------------------------
+**/.ssh/
+known_hosts
+authorized_keys
+
+# ------------------------------------------------------------------------------
+# Backups
+# ------------------------------------------------------------------------------
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*.~*
