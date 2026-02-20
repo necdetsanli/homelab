@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    homelab.necdetsanli.io/tier: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    homelab.necdetsanli.io/tier: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+  labels:
+    homelab.necdetsanli.io/tier: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  labels:
+    homelab.necdetsanli.io/tier: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    homelab.necdetsanli.io/tier: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    homelab.necdetsanli.io/tier: observability
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+  labels:
+    homelab.necdetsanli.io/tier: observability
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security
+  labels:
+    homelab.necdetsanli.io/tier: security
