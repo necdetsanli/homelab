@@ -1,0 +1,18 @@
+# MetalLB L2 Configuration for k8s-home-arpa
+# Network: 192.168.20.0/24 (server VLAN)
+#
+# IP allocation plan:
+#   .1-.99    Static infrastructure (OPNsense, Vault, k8s nodes, etc.)
+#   .100-.150 Kea DHCP dynamic pool
+#   .151-.199 Future static expansion
+#   .200-.250 MetalLB LoadBalancer pool (this config)
+#   .251-.254 Reserved
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: homelab-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.20.200-192.168.20.250
