@@ -1,0 +1,73 @@
+# Allow Kubernetes API server to reach validating/mutating webhooks.
+# The API server runs on the host network (node IPs: 192.168.20.0/24),
+# so we must explicitly allow ingress from that CIDR to webhook ports.
+# Without this, default-deny blocks webhook calls → admission failures.
+---
+# MetalLB controller webhook (port 9443)
+# Validates: IPAddressPool, L2Advertisement, BGPPeer, etc.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-webhook
+  namespace: metallb-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.20.0/24
+      ports:
+        - port: 9443
+          protocol: TCP
+  policyTypes:
+    - Ingress
+---
+# cert-manager webhook (port 10250)
+# Validates: Certificate, Issuer, ClusterIssuer, etc.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-webhook
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: webhook
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.20.0/24
+      ports:
+        - port: 10250
+          protocol: TCP
+  policyTypes:
+    - Ingress
+---
+# cert-manager main controller (port 9402 — metrics/healthz)
+# and cainjector may need API server callbacks
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-controller
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.20.0/24
+      ports:
+        - port: 9402
+          protocol: TCP
+  policyTypes:
+    - Ingress
