@@ -7,7 +7,7 @@ It is intentionally **public-safe**: no secrets, private keys, kubeconfigs, or i
 
 - **Server:** HP Proliant DL380 G9
 - **Switch:** Cisco WS-C3560CX-12-TC-S
-- **Access Point:** UniFi AP AC-30 Lite
+- **Access Point:** Ubiquiti UniFi AC Lite
 
 ## Core Platform
 
