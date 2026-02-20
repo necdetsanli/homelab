@@ -13,7 +13,7 @@ It is intentionally **public-safe**: no secrets, private keys, kubeconfigs, or i
 
 - **Virtualization:** Proxmox
 - **Firewall / Router:** OPNsense
-- **Kubernetes:** RKE2 (managed via Rancher)
+- **Kubernetes:** RKE2 (managed via Rancher, cis compliant)
 - **GitOps:** Argo CD
 
 ## DNS & Identity
@@ -38,7 +38,7 @@ It is intentionally **public-safe**: no secrets, private keys, kubeconfigs, or i
 ## High Availability
 
 - **Reverse Proxy:** HAProxy + Keepalived (failover / high availability)
-- **Vault PKI:** 3-node HA + failover (separate VM)
+- **Vault PKI:** 3-node HA + failover
 
 ## Diagrams
 
