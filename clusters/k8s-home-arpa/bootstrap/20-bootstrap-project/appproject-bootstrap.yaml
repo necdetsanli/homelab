@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: bootstrap
+  namespace: argocd
+spec:
+  description: "Bootstrap project (minimal permissions to create root GitOps objects)"
+  sourceRepos:
+    - "https://github.com/necdetsanli/homelab.git"
+
+  destinations:
+    - server: "https://kubernetes.default.svc"
+      namespace: "argocd"
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: "Namespace"
+
+  namespaceResourceWhitelist:
+    - group: "argoproj.io"
+      kind: "Application"
+    - group: "argoproj.io"
+      kind: "AppProject"
+    - group: "argoproj.io"
+      kind: "ApplicationSet"

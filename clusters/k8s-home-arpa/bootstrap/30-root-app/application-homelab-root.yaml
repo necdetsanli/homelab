@@ -6,18 +6,17 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: bootstrap
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
   source:
     repoURL: https://github.com/necdetsanli/homelab.git
-    targetRevision: main
-    path: clusters/k8s-home-arpa/apps
+    targetRevision: "REPLACE_WITH_COMMIT_SHA"
+    path: clusters/k8s-home-arpa/apps/infra/root
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
       - ServerSideApply=true

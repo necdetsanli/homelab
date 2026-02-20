@@ -1,0 +1,20 @@
+# ArgoCD RBAC configuration
+# Restricts default role to read-only; admin maps to platform-admin.
+# When FreeIPA SSO/OIDC is integrated, map LDAP groups here.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  policy.default: role:readonly
+  policy.csv: |
+    p, role:platform-admin, applications, *, */*, allow
+    p, role:platform-admin, clusters, get, *, allow
+    p, role:platform-admin, repositories, *, *, allow
+    p, role:platform-admin, projects, get, *, allow
+    p, role:platform-admin, logs, get, *, allow
+    g, admin, role:platform-admin
+  scopes: "[groups]"

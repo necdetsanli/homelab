@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - install.yaml
+
+# Optional: allow small, safe patches later (e.g., server service type)
+# patchesStrategicMerge:
+#   - patches/argocd-server-service.yaml
