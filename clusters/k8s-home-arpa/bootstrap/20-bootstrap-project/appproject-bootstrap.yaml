@@ -5,6 +5,11 @@ metadata:
   namespace: argocd
 spec:
   description: "Bootstrap project — root app manages namespaces, projects, network policies, config, and child Applications"
+
+  # Drift detection: warn when un-tracked resources appear in managed namespaces
+  orphanedResources:
+    warn: true
+
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
 

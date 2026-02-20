@@ -7,6 +7,11 @@ metadata:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   description: "Platform components for k8s-home-arpa (strict allow-list)"
+
+  # Drift detection: warn when un-tracked resources appear in managed namespaces
+  orphanedResources:
+    warn: true
+
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
 

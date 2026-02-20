@@ -46,7 +46,9 @@ spec:
             - port: "10250"
               protocol: TCP
 ---
-# cert-manager controller (port 9402 — metrics/healthz, liveness probes)
+# cert-manager controller (port 9402 — metrics endpoint)
+# Kubelet liveness/readiness probes are implicitly allowed by Cilium.
+# This rule exists for API-server-initiated health checks and future-proofing.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
