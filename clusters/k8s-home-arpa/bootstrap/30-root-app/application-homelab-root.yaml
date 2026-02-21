@@ -12,7 +12,7 @@ spec:
     namespace: argocd
   source:
     repoURL: https://github.com/necdetsanli/homelab.git
-    targetRevision: "6ac0f8a"
+    targetRevision: "807f4d5"
     path: clusters/k8s-home-arpa/apps/infra/root
   syncPolicy:
     automated:
