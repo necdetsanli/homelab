@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-secrets-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://helm.releases.hashicorp.com"
+    chart: vault-secrets-operator
+    targetRevision: 1.3.0
+    helm:
+      releaseName: vault-secrets-operator
+      valuesObject:
+        # VaultConnection + VaultAuth managed via vso-config Application
+        defaultVaultConnection:
+          enabled: false
+        defaultAuthMethod:
+          enabled: false
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: security
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

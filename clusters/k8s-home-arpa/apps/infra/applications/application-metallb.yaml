@@ -8,9 +8,12 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: "https://github.com/necdetsanli/homelab.git"
-    targetRevision: main
-    path: "vendor/metallb/0.15.3"
+    repoURL: "https://metallb.github.io/metallb"
+    chart: metallb
+    targetRevision: 0.15.3
+    helm:
+      releaseName: metallb
+      valuesObject: {}
   destination:
     server: "https://kubernetes.default.svc"
     namespace: metallb-system

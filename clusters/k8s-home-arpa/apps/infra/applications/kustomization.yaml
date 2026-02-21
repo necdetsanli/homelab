@@ -6,5 +6,6 @@ resources:
   - application-metallb.yaml
   - application-metallb-config.yaml
   - application-cilium-bgp.yaml
-  # - application-ingress-nginx.yaml   # Phase 3
-  # - application-istio.yaml           # Phase 4
+  - application-vso.yaml
+  # - application-ingress-nginx.yaml   # Removed: HAProxy edge tier handles routing
+  # - application-istio.yaml           # Future consideration

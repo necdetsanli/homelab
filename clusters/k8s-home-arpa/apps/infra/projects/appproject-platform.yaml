@@ -14,6 +14,9 @@ spec:
 
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
+    - "https://charts.jetstack.io"                   # cert-manager
+    - "https://metallb.github.io/metallb"             # metallb
+    - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
 
   destinations:
     - server: "https://kubernetes.default.svc"
@@ -22,8 +25,6 @@ spec:
       namespace: "metallb-system"
     - server: "https://kubernetes.default.svc"
       namespace: "istio-system"
-    - server: "https://kubernetes.default.svc"
-      namespace: "ingress-nginx"
     - server: "https://kubernetes.default.svc"
       namespace: "monitoring"
     - server: "https://kubernetes.default.svc"
@@ -63,6 +64,9 @@ spec:
       kind: "CiliumBGPAdvertisement"
     - group: "cilium.io"
       kind: "CiliumBGPNodeConfigOverride"
+    # VSO (Vault Secrets Operator) cluster-scoped CRDs
+    - group: "secrets.hashicorp.com"
+      kind: "VaultAuthGlobal"
 
   # Namespaced resources: strict allow-list
   namespaceResourceWhitelist:
@@ -124,3 +128,18 @@ spec:
       kind: "Certificate"
     - group: "cert-manager.io"
       kind: "Issuer"
+    # VSO (Vault Secrets Operator) namespaced resources
+    - group: "secrets.hashicorp.com"
+      kind: "VaultConnection"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultAuth"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultStaticSecret"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultDynamicSecret"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultPKISecret"
+    - group: "secrets.hashicorp.com"
+      kind: "HCPAuth"
+    - group: "secrets.hashicorp.com"
+      kind: "HCPVaultSecretsApp"

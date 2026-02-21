@@ -8,9 +8,18 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: "https://github.com/necdetsanli/homelab.git"
-    targetRevision: main
-    path: "vendor/cert-manager/v1.19.3"
+    repoURL: "https://charts.jetstack.io"
+    chart: cert-manager
+    targetRevision: v1.19.3
+    helm:
+      releaseName: cert-manager
+      valuesObject:
+        crds:
+          enabled: true
+          keep: true
+        # Helm hooks are incompatible with ArgoCD sync
+        startupapicheck:
+          enabled: false
   destination:
     server: "https://kubernetes.default.svc"
     namespace: cert-manager
