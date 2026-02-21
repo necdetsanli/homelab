@@ -1,0 +1,27 @@
+# VSO VaultAuth — Kubernetes auth method configuration
+# Authenticates VSO to Vault using the operator's ServiceAccount token.
+#
+# Prerequisites (Vault side):
+#   - Kubernetes auth enabled at auth/kubernetes
+#   - Role "vso" bound to SA "vault-secrets-operator" in namespace "security"
+#   - Policy "vso" granting read on secret/data/*
+#
+# Traffic flow:
+#   VSO pod → creates TokenRequest for SA → presents JWT to Vault K8s auth
+#   Vault validates JWT via K8s TokenReview API (using vault-auth SA token)
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: default
+  namespace: security
+spec:
+  # Reference to VaultConnection in same namespace
+  vaultConnectionRef: default
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: vso
+    serviceAccount: vault-secrets-operator
+    audiences:
+      - "vault"

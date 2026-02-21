@@ -1,0 +1,17 @@
+# VSO VaultConnection — Vault endpoint for all VSO resources
+# Points to the Vault HA cluster via HAProxy VIP.
+#
+# Traffic flow:
+#   VSO pod → HAProxy VIP (192.168.20.22:443) → active Vault leader :8200
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: default
+  namespace: security
+spec:
+  address: "https://vault.home.arpa"
+  # Root CA bundle (PEM, base64-encoded) — same chain as cert-manager ClusterIssuer.
+  # Contains: home-arpa-root-2025 (RSA 4096, valid until 2036-02-19)
+  caCertSecretRef: vault-ca-bundle
+  skipTLSVerify: false
