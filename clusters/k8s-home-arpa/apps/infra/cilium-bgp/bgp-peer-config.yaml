@@ -1,0 +1,19 @@
+# CiliumBGPPeerConfig defines how Cilium nodes connect to BGP peers.
+# OPNsense runs FRR with AS 64500; Cilium nodes use AS 64501 (eBGP).
+# Timers: 30s keepalive / 90s hold — standard production values.
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPPeerConfig
+metadata:
+  name: opnsense-peer
+spec:
+  timers:
+    holdTimeSeconds: 90
+    keepAliveTimeSeconds: 30
+    connectRetryTimeSeconds: 120
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 120
+  families:
+    - afi: ipv4
+      safi: unicast

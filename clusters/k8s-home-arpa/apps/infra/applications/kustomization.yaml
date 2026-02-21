@@ -4,5 +4,6 @@ resources:
   - application-cert-manager.yaml
   - application-metallb.yaml
   - application-metallb-config.yaml
+  - application-cilium-bgp.yaml
   # - application-ingress-nginx.yaml   # Phase 3
   # - application-istio.yaml           # Phase 4

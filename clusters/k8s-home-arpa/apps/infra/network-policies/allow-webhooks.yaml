@@ -1,7 +1,12 @@
 # Allow Kubernetes API server to reach validating/mutating webhooks.
-# Uses CiliumNetworkPolicy with fromEntities: kube-apiserver for precise
-# eBPF-level identity matching — immune to SNAT, no IP guessing.
-# This is the enterprise-grade approach for Cilium CNI clusters.
+#
+# Uses CiliumNetworkPolicy with fromEntities: kube-apiserver.
+# With Cilium native routing (no VXLAN tunnel), the API server's reserved
+# identity (ID 7) is preserved end-to-end. No need for host/remote-node
+# workarounds. This is the enterprise-grade approach.
+#
+# Port restrictions limit blast radius. TLS mutual authentication on
+# webhooks provides the authorization layer.
 ---
 # MetalLB controller webhook (port 9443)
 # Validates: IPAddressPool, L2Advertisement, BGPPeer, etc.

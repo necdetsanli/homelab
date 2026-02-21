@@ -54,6 +54,15 @@ spec:
       kind: "ClusterIssuer"
     - group: "networking.k8s.io"
       kind: "IngressClass"
+    # Cilium BGP Control Plane (cluster-scoped)
+    - group: "cilium.io"
+      kind: "CiliumBGPClusterConfig"
+    - group: "cilium.io"
+      kind: "CiliumBGPPeerConfig"
+    - group: "cilium.io"
+      kind: "CiliumBGPAdvertisement"
+    - group: "cilium.io"
+      kind: "CiliumBGPNodeConfigOverride"
 
   # Namespaced resources: strict allow-list
   namespaceResourceWhitelist:
