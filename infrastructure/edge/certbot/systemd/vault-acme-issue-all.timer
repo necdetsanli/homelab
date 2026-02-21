@@ -1,0 +1,18 @@
+# /etc/systemd/system/vault-acme-issue-all.timer
+# =============================================================================
+# Daily timer for Vault ACME certificate issuance/renewal.
+# Runs only on the Keepalived VIP owner (vault-acme-issue-all.sh checks).
+#
+# Schedule: 03:17 UTC+3 with up to 1h random jitter to avoid thundering herd.
+# Persistent: catches up if the machine was off at scheduled time.
+# =============================================================================
+[Unit]
+Description=Daily Vault ACME DNS-01 issue/renew all certs (VIP owner only)
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

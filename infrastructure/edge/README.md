@@ -44,10 +44,30 @@ Internal VLAN clients / WireGuard peers
 infrastructure/edge/
 ├── README.md
 ├── haproxy/
-│   └── haproxy.cfg              # Shared config (identical on both nodes)
-└── keepalived/
-    ├── edge-1-keepalived.conf   # MASTER  priority 120
-    └── edge-2-keepalived.conf   # BACKUP  priority 110
+│   ├── haproxy.cfg              # Shared config (identical on both nodes)
+│   └── certsync/
+│       ├── crt-list.txt         # HAProxy SNI → cert mapping
+│       └── allowlist.txt        # PEM filenames allowed for rsync to edge-2
+├── keepalived/
+│   ├── edge-1-keepalived.conf   # MASTER  priority 120
+│   ├── edge-2-keepalived.conf   # BACKUP  priority 110
+│   └── scripts/
+│       └── keepalived-notify-certsync.sh   # VIP transition trigger
+├── certbot/
+│   ├── dns01/
+│   │   ├── auth.sh              # DNS-01 auth hook (FreeIPA nsupdate / GSS-TSIG)
+│   │   └── cleanup.sh           # DNS-01 cleanup hook (delete TXT record)
+│   ├── hooks/
+│   │   └── deploy/
+│   │       └── 50-haproxy-deploy  # Assemble PEM bundle + reload HAProxy
+│   └── systemd/
+│       ├── vault-acme-issue-all.timer       # Daily renewal timer
+│       ├── vault-acme-issue-all.service     # One-shot certbot orchestrator
+│       └── vault-acme-issue-all.service.d/
+│           └── 20-certsync.conf             # Drop-in: rsync to edge-2
+└── scripts/
+    ├── vault-acme-issue-all.sh  # Main orchestrator (certbot per domain)
+    └── haproxy-certs-send       # rsync PEMs to edge-2 via certsync user
 ```
 
 ## Deployment Notes
@@ -59,6 +79,31 @@ infrastructure/edge/
   for stable failback.
 - The `check_haproxy.sh` health script should return 0 when HAProxy is healthy,
   non-zero otherwise (e.g., `killall -0 haproxy`).
+
+## TLS / PKI Pipeline
+
+Edge TLS certificates are issued by **Vault PKI** (intermediate CA) via the
+built-in **ACME** endpoint using **DNS-01** challenges against **FreeIPA DNS**.
+
+```
+vault-acme-issue-all.timer (daily 03:17 + jitter)
+  → vault-acme-issue-all.sh   (loops all domains, calls certbot)
+    → certbot --server vault ACME --manual-auth-hook auth.sh
+      → auth.sh: kinit + nsupdate -g → TXT in acme.home.arpa zone
+      → Vault verifies DNS-01 → issues cert
+      → cleanup.sh: deletes TXT record
+      → 50-haproxy-deploy: cat key+chain → PEM, validate, reload
+    → haproxy-certs-send (ExecStartPost): rsync PEMs → edge-2
+```
+
+**CNAME delegation pattern** (no writes to production DNS zone):
+
+```
+_acme-challenge.opnsense.mgmt.home.arpa  CNAME → opnsense.mgmt.home.arpa.acme.home.arpa.
+```
+
+Authentication: Kerberos keytab (`certbot-dnsupd/edge-1.home.arpa@HOME.ARPA`)
+for GSS-TSIG `nsupdate`. No shared secrets or API tokens for DNS updates.
 
 ## Security
 

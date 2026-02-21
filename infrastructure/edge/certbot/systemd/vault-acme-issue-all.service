@@ -1,0 +1,15 @@
+# /etc/systemd/system/vault-acme-issue-all.service
+# =============================================================================
+# One-shot service: issues/renews all edge certificates via Vault ACME.
+# Uses flock to prevent concurrent runs (e.g. during Keepalived failover).
+#
+# ExecStartPost (from drop-in 20-certsync.conf) syncs certs to edge-2.
+# =============================================================================
+[Unit]
+Description=Vault ACME DNS-01 issue/renew all certs (VIP owner only)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/vault-acme-issue-all.lock /usr/local/sbin/vault-acme-issue-all.sh

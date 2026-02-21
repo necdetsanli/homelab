@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Certbot deploy hook — assemble HAProxy PEM bundle and reload
+#
+# Certbot calls every executable in renewal-hooks/deploy/ after successful
+# cert issuance/renewal.  This script:
+#   1. Concatenates privkey + fullchain into a single .pem
+#   2. Places it in /etc/haproxy/certs/<primary-domain>.pem
+#   3. Validates HAProxy config
+#   4. Reloads HAProxy
+#
+# IMPORTANT: Only ONE executable deploy hook should exist in this directory.
+#            Remove or chmod -x any .bak / .disabled files to prevent
+#            duplicate runs and permission conflicts.
+#
+# Deployed to: /etc/letsencrypt/renewal-hooks/deploy/50-haproxy-deploy
+# =============================================================================
+set -euo pipefail
+
+# Exit cleanly if not called by certbot (deploy hook context).
+: "${RENEWED_LINEAGE:=}"
+: "${RENEWED_DOMAINS:=}"
+if [ -z "${RENEWED_LINEAGE}" ] || [ -z "${RENEWED_DOMAINS}" ]; then
+  exit 0
+fi
+
+# Secure defaults:
+# - files: 640
+# - dirs : 750
+umask 027
+
+readonly HAPROXY_CFG="/etc/haproxy/haproxy.cfg"
+readonly CERTS_DIR="/etc/haproxy/certs"
+readonly HAPROXY_BIN="/usr/sbin/haproxy"
+readonly HAPROXY_SVC="haproxy"
+
+lineage="${RENEWED_LINEAGE:?}"     # e.g. /etc/letsencrypt/live/vault.home.arpa
+domains="${RENEWED_DOMAINS:?}"     # space-separated list
+
+if [ ! -d "${lineage}" ]; then
+  echo "ERROR: RENEWED_LINEAGE is not a directory: ${lineage}" >&2
+  exit 1
+fi
+
+# Pick the primary CN from the renewed domains list (first token).
+primary="$(printf '%s\n' ${domains} | head -n1)"
+if [ -z "${primary}" ]; then
+  echo "ERROR: Could not determine primary domain from RENEWED_DOMAINS" >&2
+  exit 1
+fi
+
+src_key="${lineage}/privkey.pem"
+src_chain="${lineage}/fullchain.pem"
+if [ ! -r "${src_key}" ]; then
+  echo "ERROR: missing/unreadable key: ${src_key}" >&2
+  exit 1
+fi
+if [ ! -r "${src_chain}" ]; then
+  echo "ERROR: missing/unreadable chain: ${src_chain}" >&2
+  exit 1
+fi
+
+dst="${CERTS_DIR}/${primary}.pem"
+
+# Ensure directory exists with correct perms for haproxy reads
+install -d -m 0750 -o root -g haproxy "${CERTS_DIR}"
+
+# Atomic write: build temp in same directory then rename
+tmp="$(mktemp "${dst}.XXXXXX")"
+cleanup() { rm -f "${tmp}" 2>/dev/null || true; }
+trap cleanup EXIT
+
+cat "${src_key}" "${src_chain}" > "${tmp}"
+
+# Final file must be readable by haproxy group
+chmod 0600 "${tmp}"
+chown root:haproxy "${tmp}"
+chmod 0640 "${tmp}"
+
+mv -f "${tmp}" "${dst}"
+trap - EXIT
+
+# Safety: validate config before reload
+"${HAPROXY_BIN}" -c -q -f "${HAPROXY_CFG}"
+systemctl reload "${HAPROXY_SVC}"

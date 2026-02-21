@@ -1,0 +1,28 @@
+# =============================================================================
+# HAProxy crt-list — SNI-based certificate selection
+#
+# Each line: <PEM path> [SNI filter]
+# HAProxy uses SNI to select the correct certificate per hostname.
+#
+# The vault.home.arpa.pem is loaded as the default cert on the bind line
+# in haproxy.cfg, so it does NOT need to appear here.
+#
+# Deployed to: /etc/haproxy/certsync/crt-list.txt
+# =============================================================================
+/etc/haproxy/certs/nextcloud.app.home.arpa.pem
+/etc/haproxy/certs/opnsense.mgmt.home.arpa.pem
+/etc/haproxy/certs/wazuh.mgmt.home.arpa.pem
+/etc/haproxy/certs/ipa.mgmt.home.arpa.pem
+/etc/haproxy/certs/ipa-cockpit.mgmt.home.arpa.pem
+/etc/haproxy/certs/proxmox.mgmt.home.arpa.pem
+/etc/haproxy/certs/ilo.mgmt.home.arpa.pem
+/etc/haproxy/certs/unifi.mgmt.home.arpa.pem
+/etc/haproxy/certs/rancher.mgmt.home.arpa.pem
+/etc/haproxy/certs/adguard.mgmt.home.arpa.pem
+/etc/haproxy/certs/truenas.mgmt.home.arpa.pem
+/etc/haproxy/certs/maltrail.mgmt.home.arpa.pem
+/etc/haproxy/certs/netdata.mgmt.home.arpa.pem
+/etc/haproxy/certs/ntopng.mgmt.home.arpa.pem
+/etc/haproxy/certs/me30.mgmt.home.arpa.pem
+/etc/haproxy/certs/vault.mgmt.home.arpa.pem
+/etc/haproxy/certs/haproxy.mgmt.home.arpa.pem

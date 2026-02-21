@@ -1,0 +1,30 @@
+# =============================================================================
+# Allowlist — PEM filenames permitted for rsync to edge-2
+#
+# haproxy-certs-send reads this file and ONLY syncs listed filenames.
+# Defence in depth: even if /etc/haproxy/certs/ contains extra files,
+# only allowlisted PEMs are transmitted.
+#
+# One filename per line (basename only, no paths).
+# Must match: ^[A-Za-z0-9._-]+\.pem$
+#
+# Deployed to: /etc/haproxy/certsync/allowlist.txt
+# =============================================================================
+nextcloud.app.home.arpa.pem
+opnsense.mgmt.home.arpa.pem
+wazuh.mgmt.home.arpa.pem
+ipa.mgmt.home.arpa.pem
+ipa-cockpit.mgmt.home.arpa.pem
+proxmox.mgmt.home.arpa.pem
+ilo.mgmt.home.arpa.pem
+unifi.mgmt.home.arpa.pem
+rancher.mgmt.home.arpa.pem
+adguard.mgmt.home.arpa.pem
+truenas.mgmt.home.arpa.pem
+maltrail.mgmt.home.arpa.pem
+netdata.mgmt.home.arpa.pem
+ntopng.mgmt.home.arpa.pem
+me30.mgmt.home.arpa.pem
+vault.home.arpa.pem
+vault.mgmt.home.arpa.pem
+haproxy.mgmt.home.arpa.pem

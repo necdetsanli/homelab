@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# =============================================================================
+# haproxy-certs-send — Sync HAProxy PEM bundles from edge-1 → edge-2
+#
+# Uses rsync over SSH with the restricted certsync user account.
+# Only sends files listed in the allowlist (defence in depth).
+#
+# Runs as ExecStartPost of vault-acme-issue-all.service.
+# Only executes on the Keepalived VIP owner.
+#
+# Security model:
+#   - certsync user on edge-2 has a ForceCommand / restricted shell
+#   - SSH key: /home/certsync/.ssh/id_ed25519 (edge-1 → edge-2)
+#   - Allowlist: /etc/haproxy/certsync/allowlist.txt
+#
+# Deployed to: /usr/local/sbin/haproxy-certs-send
+# =============================================================================
+set -euo pipefail
+umask 077
+
+readonly VIP_IP="192.168.20.22"
+if ! ip -4 -o addr show | awk '{print $4}' | grep -Eq "${VIP_IP}(/|$)"; then
+  echo "Not VIP owner (${VIP_IP}). Skipping send."
+  exit 0
+fi
+
+readonly ALLOWLIST="/etc/haproxy/certsync/allowlist.txt"
+readonly CERT_DIR="/etc/haproxy/certs"
+readonly KEY="/home/certsync/.ssh/id_ed25519"
+readonly REMOTE="certsync@edge-2.home.arpa"
+
+[[ -r "${ALLOWLIST}" ]] || { echo "ERROR: allowlist missing: ${ALLOWLIST}" >&2; exit 1; }
+[[ -s "${KEY}" ]] || { echo "ERROR: key missing: ${KEY}" >&2; exit 1; }
+
+mapfile -t files < <(grep -E "^[A-Za-z0-9._-]+\.pem$" "${ALLOWLIST}" | sed "/^$/d")
+if [[ "${#files[@]}" -eq 0 ]]; then
+  echo "ERROR: allowlist empty" >&2
+  exit 1
+fi
+
+for name in "${files[@]}"; do
+  if [[ ! "${name}" =~ ^[A-Za-z0-9._-]+\.pem$ ]]; then
+    echo "ERROR: invalid allowlist entry: ${name}" >&2
+    exit 1
+  fi
+  if [[ ! -s "${CERT_DIR}/${name}" ]]; then
+    echo "MISSING: ${CERT_DIR}/${name}" >&2
+    exit 1
+  fi
+done
+
+ssh_opts=(
+  -T
+  -i "${KEY}"
+  -o BatchMode=yes
+  -o IdentitiesOnly=yes
+  -o StrictHostKeyChecking=accept-new
+  -o ConnectTimeout=5
+)
+
+ssh_cmd=(ssh "${ssh_opts[@]}")
+rsync -rtvz --files-from="${ALLOWLIST}" -e "${ssh_cmd[*]}" "${CERT_DIR}/" "${REMOTE}:${CERT_DIR}/"
