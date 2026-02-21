@@ -1,0 +1,21 @@
+# ArgoCD Server TLS Certificate
+# Issued by Vault PKI intermediate CA via cert-manager.
+# Auto-renewed 7 days before expiry.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-server-tls
+  namespace: argocd
+spec:
+  secretName: argocd-server-tls
+  issuerRef:
+    name: vault-pki
+    kind: ClusterIssuer
+  dnsNames:
+    - argocd.mgmt.home.arpa
+  duration: 720h    # 30 days
+  renewBefore: 168h  # renew 7 days early
+  privateKey:
+    algorithm: ECDSA
+    size: 256
