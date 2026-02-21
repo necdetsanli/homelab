@@ -25,6 +25,7 @@ maltrail.mgmt.home.arpa.pem
 netdata.mgmt.home.arpa.pem
 ntopng.mgmt.home.arpa.pem
 me30.mgmt.home.arpa.pem
+argocd.mgmt.home.arpa.pem
 vault.home.arpa.pem
 vault.mgmt.home.arpa.pem
 haproxy.mgmt.home.arpa.pem

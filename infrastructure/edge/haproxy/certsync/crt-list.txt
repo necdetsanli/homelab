@@ -1,28 +1,31 @@
 # =============================================================================
 # HAProxy crt-list — SNI-based certificate selection
 #
-# Each line: <PEM path> [SNI filter]
-# HAProxy uses SNI to select the correct certificate per hostname.
+# Format: <PEM path> [SNI filter]
+# SNI filters restrict each cert to its exact hostname, preventing HAProxy
+# from serving the wrong cert if SNI doesn't match. Without filters, HAProxy
+# may return any loaded cert as a fallback.
 #
 # The vault.home.arpa.pem is loaded as the default cert on the bind line
 # in haproxy.cfg, so it does NOT need to appear here.
 #
 # Deployed to: /etc/haproxy/certsync/crt-list.txt
 # =============================================================================
-/etc/haproxy/certs/nextcloud.app.home.arpa.pem
-/etc/haproxy/certs/opnsense.mgmt.home.arpa.pem
-/etc/haproxy/certs/wazuh.mgmt.home.arpa.pem
-/etc/haproxy/certs/ipa.mgmt.home.arpa.pem
-/etc/haproxy/certs/ipa-cockpit.mgmt.home.arpa.pem
-/etc/haproxy/certs/proxmox.mgmt.home.arpa.pem
-/etc/haproxy/certs/ilo.mgmt.home.arpa.pem
-/etc/haproxy/certs/unifi.mgmt.home.arpa.pem
-/etc/haproxy/certs/rancher.mgmt.home.arpa.pem
-/etc/haproxy/certs/adguard.mgmt.home.arpa.pem
-/etc/haproxy/certs/truenas.mgmt.home.arpa.pem
-/etc/haproxy/certs/maltrail.mgmt.home.arpa.pem
-/etc/haproxy/certs/netdata.mgmt.home.arpa.pem
-/etc/haproxy/certs/ntopng.mgmt.home.arpa.pem
-/etc/haproxy/certs/me30.mgmt.home.arpa.pem
-/etc/haproxy/certs/vault.mgmt.home.arpa.pem
-/etc/haproxy/certs/haproxy.mgmt.home.arpa.pem
+/etc/haproxy/certs/nextcloud.app.home.arpa.pem    nextcloud.app.home.arpa
+/etc/haproxy/certs/opnsense.mgmt.home.arpa.pem    opnsense.mgmt.home.arpa
+/etc/haproxy/certs/wazuh.mgmt.home.arpa.pem       wazuh.mgmt.home.arpa
+/etc/haproxy/certs/ipa.mgmt.home.arpa.pem         ipa.mgmt.home.arpa
+/etc/haproxy/certs/ipa-cockpit.mgmt.home.arpa.pem ipa-cockpit.mgmt.home.arpa
+/etc/haproxy/certs/proxmox.mgmt.home.arpa.pem     proxmox.mgmt.home.arpa
+/etc/haproxy/certs/ilo.mgmt.home.arpa.pem         ilo.mgmt.home.arpa
+/etc/haproxy/certs/unifi.mgmt.home.arpa.pem       unifi.mgmt.home.arpa
+/etc/haproxy/certs/rancher.mgmt.home.arpa.pem     rancher.mgmt.home.arpa
+/etc/haproxy/certs/adguard.mgmt.home.arpa.pem     adguard.mgmt.home.arpa
+/etc/haproxy/certs/truenas.mgmt.home.arpa.pem     truenas.mgmt.home.arpa
+/etc/haproxy/certs/maltrail.mgmt.home.arpa.pem    maltrail.mgmt.home.arpa
+/etc/haproxy/certs/netdata.mgmt.home.arpa.pem     netdata.mgmt.home.arpa
+/etc/haproxy/certs/ntopng.mgmt.home.arpa.pem      ntopng.mgmt.home.arpa
+/etc/haproxy/certs/me30.mgmt.home.arpa.pem        me30.mgmt.home.arpa
+/etc/haproxy/certs/argocd.mgmt.home.arpa.pem      argocd.mgmt.home.arpa
+/etc/haproxy/certs/vault.mgmt.home.arpa.pem       vault.mgmt.home.arpa
+/etc/haproxy/certs/haproxy.mgmt.home.arpa.pem     haproxy.mgmt.home.arpa

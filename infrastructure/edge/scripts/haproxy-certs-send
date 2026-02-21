@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 # =============================================================================
-# haproxy-certs-send — Sync HAProxy PEM bundles from edge-1 → edge-2
+# haproxy-certs-send — Sync HAProxy PEM bundles + config from edge-1 → edge-2
 #
 # Uses rsync over SSH with the restricted certsync user account.
-# Only sends files listed in the allowlist (defence in depth).
+# Syncs THREE things (single source of truth on edge-1):
+#   1. /etc/haproxy/certsync/allowlist.txt  (which PEMs to keep)
+#   2. /etc/haproxy/certsync/crt-list.txt   (HAProxy SNI map)
+#   3. /etc/haproxy/certs/*.pem             (only allowlisted files)
+#
+# Edge-2's haproxy-certs-recv validates, enforces the allowlist, fixes
+# permissions, and reloads HAProxy — no manual config needed on edge-2.
 #
 # Runs as ExecStartPost of vault-acme-issue-all.service.
 # Only executes on the Keepalived VIP owner.
 #
 # Security model:
-#   - certsync user on edge-2 has a ForceCommand / restricted shell
+#   - certsync user on edge-2 has ForceCommand → haproxy-certs-recv
 #   - SSH key: /home/certsync/.ssh/id_ed25519 (edge-1 → edge-2)
-#   - Allowlist: /etc/haproxy/certsync/allowlist.txt
+#   - Allowlist filtering on BOTH sides (defence in depth)
 #
 # Deployed to: /usr/local/sbin/haproxy-certs-send
 # =============================================================================
@@ -25,13 +31,19 @@ if ! ip -4 -o addr show | awk '{print $4}' | grep -Eq "${VIP_IP}(/|$)"; then
 fi
 
 readonly ALLOWLIST="/etc/haproxy/certsync/allowlist.txt"
+readonly CRT_LIST="/etc/haproxy/certsync/crt-list.txt"
 readonly CERT_DIR="/etc/haproxy/certs"
+readonly SYNC_DIR="/etc/haproxy/certsync"
 readonly KEY="/home/certsync/.ssh/id_ed25519"
 readonly REMOTE="certsync@edge-2.home.arpa"
 
 [[ -r "${ALLOWLIST}" ]] || { echo "ERROR: allowlist missing: ${ALLOWLIST}" >&2; exit 1; }
-[[ -s "${KEY}" ]] || { echo "ERROR: key missing: ${KEY}" >&2; exit 1; }
+[[ -r "${CRT_LIST}" ]] || { echo "ERROR: crt-list missing: ${CRT_LIST}" >&2; exit 1; }
+[[ -s "${KEY}" ]]       || { echo "ERROR: key missing: ${KEY}" >&2; exit 1; }
 
+# ---------------------------------------------------------------------------
+# Validate allowlist entries
+# ---------------------------------------------------------------------------
 mapfile -t files < <(grep -E "^[A-Za-z0-9._-]+\.pem$" "${ALLOWLIST}" | sed "/^$/d")
 if [[ "${#files[@]}" -eq 0 ]]; then
   echo "ERROR: allowlist empty" >&2
@@ -49,6 +61,9 @@ for name in "${files[@]}"; do
   fi
 done
 
+# ---------------------------------------------------------------------------
+# SSH/rsync transport
+# ---------------------------------------------------------------------------
 ssh_opts=(
   -T
   -i "${KEY}"
@@ -59,4 +74,16 @@ ssh_opts=(
 )
 
 ssh_cmd=(ssh "${ssh_opts[@]}")
-rsync -rtvz --files-from="${ALLOWLIST}" -e "${ssh_cmd[*]}" "${CERT_DIR}/" "${REMOTE}:${CERT_DIR}/"
+
+# Step 1: Sync config files (allowlist + crt-list) → edge-2
+echo "==> Syncing certsync config to edge-2"
+rsync -rtvz --chmod=F640,D750 \
+  -e "${ssh_cmd[*]}" \
+  "${SYNC_DIR}/allowlist.txt" "${SYNC_DIR}/crt-list.txt" \
+  "${REMOTE}:${SYNC_DIR}/"
+
+# Step 2: Sync certs (allowlisted only) → edge-2
+echo "==> Syncing certificates to edge-2"
+rsync -rtvz --files-from="${ALLOWLIST}" \
+  -e "${ssh_cmd[*]}" \
+  "${CERT_DIR}/" "${REMOTE}:${CERT_DIR}/"

@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# =============================================================================
+# haproxy-certs-recv — Receive and validate PEM bundles + config from edge-1
+#
+# Invoked via SSH ForceCommand on the certsync user account.
+# Accepts rsync connections to TWO paths:
+#   /etc/haproxy/certsync/  — allowlist.txt + crt-list.txt (synced first)
+#   /etc/haproxy/certs/     — PEM bundles (synced second)
+#
+# Post-rsync:
+#   1. Cleans junk/backups/symlinks from cert dir
+#   2. Enforces allowlist — deletes PEMs not in the list
+#   3. Validates every remaining PEM (must contain key + cert)
+#   4. Normalizes ownership (root:haproxy, 0640)
+#   5. Validates haproxy.cfg and reloads HAProxy
+#
+# Security model:
+#   - Only rsync --server commands accepted
+#   - Destination restricted to CERT_DIR or SYNC_DIR
+#   - Allowlist enforced post-rsync (defence in depth)
+#   - No shell access for certsync user
+#
+# Deployed to: /usr/local/sbin/haproxy-certs-recv
+# Activated via: /etc/ssh/sshd_config.d/60-certsync-forcecommand.conf
+# =============================================================================
+set -euo pipefail
+
+PATH='/usr/sbin:/usr/bin:/sbin:/bin'
+umask 027
+
+readonly CERT_DIR='/etc/haproxy/certs'
+readonly SYNC_DIR='/etc/haproxy/certsync'
+readonly ALLOWLIST="${SYNC_DIR}/allowlist.txt"
+readonly HAPROXY_CFG='/etc/haproxy/haproxy.cfg'
+readonly HAPROXY_BIN='/usr/sbin/haproxy'
+readonly HAPROXY_SVC='haproxy'
+
+fail() { echo "haproxy-certs-recv: $*" >&2; exit 1; }
+
+trim_ws() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "${s}"
+}
+
+# ---------------------------------------------------------------------------
+# Validate SSH_ORIGINAL_COMMAND — must be rsync --server
+# ---------------------------------------------------------------------------
+cmd="${SSH_ORIGINAL_COMMAND:-}"
+[ -n "${cmd}" ] || fail "missing SSH_ORIGINAL_COMMAND"
+
+read -r -a argv <<< "${cmd}"
+[ "${#argv[@]}" -ge 2 ] || fail "invalid command"
+
+rsync_bin="${argv[0]}"
+case "${rsync_bin}" in
+  rsync|/usr/bin/rsync|/bin/rsync) ;;
+  *) fail "only rsync is allowed" ;;
+esac
+
+[ "${argv[1]}" = "--server" ] || fail "only rsync --server is allowed"
+
+# Destination is the last argument — must be CERT_DIR or SYNC_DIR
+dest="${argv[-1]}"
+case "${dest}" in
+  "${CERT_DIR}"|"${CERT_DIR}/")   dest_type="certs"  ;;
+  "${SYNC_DIR}"|"${SYNC_DIR}/")   dest_type="config"  ;;
+  *) fail "destination must be ${CERT_DIR} or ${SYNC_DIR}" ;;
+esac
+
+# ---------------------------------------------------------------------------
+# Ensure directories exist with correct perms
+# ---------------------------------------------------------------------------
+install -d -o root -g haproxy -m 0750 "${CERT_DIR}"
+install -d -o root -g haproxy -m 0750 "${SYNC_DIR}"
+
+# ---------------------------------------------------------------------------
+# Run rsync server command (accept the incoming data)
+# ---------------------------------------------------------------------------
+"${argv[@]}"
+
+# ---------------------------------------------------------------------------
+# Post-rsync: only run full validation after cert sync (not config-only)
+# ---------------------------------------------------------------------------
+if [[ "${dest_type}" == "config" ]]; then
+  # Config files synced — fix perms and exit (cert sync follows next)
+  chown root:haproxy "${SYNC_DIR}"/*.txt 2>/dev/null || true
+  chmod 0640 "${SYNC_DIR}"/*.txt 2>/dev/null || true
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Cert sync — full post-rsync hardening
+# ---------------------------------------------------------------------------
+
+# Ensure allowlist exists
+[ -r "${ALLOWLIST}" ] || fail "missing/unreadable allowlist: ${ALLOWLIST}"
+
+# Load allowlist into a set
+declare -A allowed=()
+while IFS= read -r line; do
+  line="${line%%#*}"
+  line="$(trim_ws "${line}")"
+  [ -n "${line}" ] || continue
+
+  case "${line}" in
+    */*  ) fail "invalid allowlist entry (must be filename only): ${line}" ;;
+    *.pem) ;;
+    *    ) fail "invalid allowlist entry (must end with .pem): ${line}" ;;
+  esac
+
+  allowed["${line}"]=1
+done < "${ALLOWLIST}"
+
+# Clean junk/backups and disallow symlinks/special files
+find "${CERT_DIR}" -maxdepth 1 -type f \
+  \( -name '.*.pem.bak.*' -o -name '*.pem.bak.*' -o -name '*.pem~' \) \
+  -delete || true
+find "${CERT_DIR}" -maxdepth 1 \
+  \( -type l -o -type b -o -type c -o -type p -o -type s \) \
+  -exec rm -f -- {} + || true
+
+# Enforce allowlist: delete any .pem not in the list
+while IFS= read -r -d '' f; do
+  base="$(basename "${f}")"
+  if [[ -z "${allowed[${base}]+x}" ]]; then
+    rm -f -- "${f}"
+  fi
+done < <(find "${CERT_DIR}" -maxdepth 1 -type f -name '*.pem' -print0)
+
+# Validate and normalize PEM bundles
+while IFS= read -r -d '' f; do
+  grep -q 'BEGIN .*PRIVATE KEY' "${f}" || fail "invalid pem (missing private key): ${f}"
+  grep -q 'BEGIN CERTIFICATE'   "${f}" || fail "invalid pem (missing certificate): ${f}"
+
+  chown root:haproxy "${f}"
+  chmod 0640 "${f}"
+done < <(find "${CERT_DIR}" -maxdepth 1 -type f -name '*.pem' -print0)
+
+chmod 0750 "${CERT_DIR}"
+chown root:haproxy "${CERT_DIR}"
+
+# Validate config and reload HAProxy
+"${HAPROXY_BIN}" -c -q -f "${HAPROXY_CFG}"
+systemctl reload "${HAPROXY_SVC}"
+
+echo "haproxy-certs-recv: synced $(find "${CERT_DIR}" -maxdepth 1 -name '*.pem' | wc -l) certs, HAProxy reloaded"
