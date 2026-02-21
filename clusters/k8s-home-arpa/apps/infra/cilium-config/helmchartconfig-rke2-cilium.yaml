@@ -1,0 +1,35 @@
+# ----------------------------------------------------------
+# RKE2 Cilium HelmChartConfig — custom overrides only
+# Applied via Rancher GUI (Apps → rke2-cilium)
+# This file is a reference copy for version tracking.
+# ----------------------------------------------------------
+# Base chart: rancher/rke2-cilium (Cilium v1.19.0)
+# Cluster:    k8s-home-arpa (RKE2 v1.34.4+rke2r1)
+# ----------------------------------------------------------
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-cilium
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    # --- Routing Mode ---
+    # Native routing instead of VXLAN tunneling.
+    # Preserves source identity end-to-end (critical for
+    # CiliumNetworkPolicy fromEntities: kube-apiserver).
+    routingMode: native
+    ipv4NativeRoutingCIDR: "10.42.0.0/16"
+    autoDirectNodeRoutes: true
+
+    # --- Masquerade ---
+    enableIPv4Masquerade: true
+
+    # --- Kube-Proxy Replacement ---
+    kubeProxyReplacement: "true"
+
+    # --- BGP Control Plane ---
+    # Advertises pod CIDRs and LoadBalancer IPs to OPNsense
+    # via eBGP (Cilium AS 64501 ↔ OPNsense AS 64500).
+    # CRDs (CiliumBGPClusterConfig, etc.) live in cilium-bgp/.
+    bgpControlPlane:
+      enabled: true
