@@ -1,101 +1,89 @@
 # ==============================================================================
-# Public Homelab GitOps .gitignore (security-first)
-# - Keep only public-safe, reproducible config in Git
-# - Never commit secrets, private keys, tokens, kubeconfigs, or state
+# Homelab GitOps .gitignore — security-first, format-agnostic
+#
+# Principle: ignore SECRETS and STATE, not file formats.
+# Config files (.cfg, .conf, .yaml) are safe to commit as long as they
+# contain no credentials. Secrets belong in Vault, not in git.
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Local planning / notes (not part of the repo)
+# Local-only files
 # ------------------------------------------------------------------------------
 PLAN.md
 
 # ------------------------------------------------------------------------------
-# Secrets / Env
+# Secrets & credentials
 # ------------------------------------------------------------------------------
+# Environment files (may contain tokens/passwords)
 .env
 .env.*
 !.env.example
 !.env.template
-!.env.sample
 
-# Common secret directories (keep templates elsewhere)
+# Secret directories
 secrets/
 secret/
 private/
-pki/
-certs/
-keys/
-ssl/
-tls/
-vault-data/
 
-# Private key / certificate / keystore formats
+# Private keys & certificates (key material)
 *.key
-*.key.*
 *.pem
-*.pem.*
 *.pfx
 *.p12
 *.jks
+*.keystore
 *.crt
-*.crt.*
 *.csr
 *.der
-*.keystore
 
-# Client profiles / device configs
-*.ovpn
-*.mobileconfig
-
-# Kubernetes kubeconfigs
-*.kubeconfig
-kubeconfig
-**/kubeconfig
-**/kubeconfig.*
-/etc/rancher/**
-
-# Vault tokens / sensitive local files
-.vault-token
-vault.hcl
-
-# ------------------------------------------------------------------------------
-# SOPS / AGE / GPG (configs are safe to commit; keys are NOT)
-# ------------------------------------------------------------------------------
-# SOPS config SHOULD be committed:
-!.sops.yaml
-!.sops.yml
-
-# Encryption keys and private material
+# Encryption keys
 *.age
 *.agekey
 *.gpg
 *.pgp
 *.asc
 
-# ------------------------------------------------------------------------------
-# Config files (commit ONLY templates/examples)
-# ------------------------------------------------------------------------------
-*.cfg
-*.conf
-*.ini
-*.config
-*.cnf
+# VPN / device profiles
+*.ovpn
+*.mobileconfig
 
-# Allow public-safe templates/examples
-!**/*.example
-!**/*.template
-!**/*.sample
+# Vault tokens
+.vault-token
 
 # ------------------------------------------------------------------------------
-# Logs / Runtime state / Temporary files
+# Kubernetes sensitive files
 # ------------------------------------------------------------------------------
-logs/
-log/
+*.kubeconfig
+kubeconfig
+**/kubeconfig
+**/kubeconfig.*
+
+# Helm secrets plugin
+secrets.yaml
+secrets.*.yaml
+!secrets.example.yaml
+
+# ------------------------------------------------------------------------------
+# SOPS config (safe to commit — these are pointers, not keys)
+# ------------------------------------------------------------------------------
+!.sops.yaml
+!.sops.yml
+
+# ------------------------------------------------------------------------------
+# Runtime state & logs
+# ------------------------------------------------------------------------------
 *.log
 *.log.*
 *.out
 *.err
+*.pid
+*.sock
+*.tmp
+*.swp
+*.swo
 
+logs/
+log/
 data/
 state/
 run/
@@ -103,16 +91,8 @@ tmp/
 temp/
 .cache/
 cache/
-*.tmp
-*.swp
-*.swo
 
-# Common daemon/runtime artifacts
-*.pid
-*.sock
-haproxy.pid
-
-# Databases / local storage
+# Databases / persistence
 *.db
 *.sqlite
 *.sqlite3
@@ -121,22 +101,7 @@ dump.rdb
 appendonly.aof
 
 # ------------------------------------------------------------------------------
-# Docker / Containers
-# ------------------------------------------------------------------------------
-docker-compose.override.yml
-docker-compose.override.yaml
-compose.override.yml
-compose.override.yaml
-
-**/dist/
-**/build/
-**/target/
-**/*.tar
-**/*.tar.gz
-**/*.tgz
-
-# ------------------------------------------------------------------------------
-# Terraform / IaC
+# Terraform / OpenTofu
 # ------------------------------------------------------------------------------
 .terraform/
 *.tfstate
@@ -152,36 +117,27 @@ terraform.rc
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
-!*.tfvars.template
 
 # Terragrunt
 .terragrunt-cache/
 
 # Pulumi
 .pulumi/
-Pulumi.*.yaml
-!Pulumi.*.example.yaml
 
 # ------------------------------------------------------------------------------
 # Ansible
 # ------------------------------------------------------------------------------
 *.retry
-ansible/*.retry
 
-# Keep custom roles/playbooks in Git; ignore downloaded vendor collections
+# Downloaded vendor collections (not your code)
 ansible/collections/ansible_collections/
 
-# Inventory should be templated (no real hosts/secrets)
+# Inventory with real hosts — commit templates only
 ansible/inventory/*
 !ansible/inventory/*.example
-!ansible/inventory/*.template
-
-# Optional: ignore role build/cache artifacts
-ansible/roles/**/.cache/
-ansible/roles/**/.tmp/
 
 # ------------------------------------------------------------------------------
-# Kubernetes / Helm
+# Kubernetes / Helm build artifacts
 # ------------------------------------------------------------------------------
 charts/**/charts/
 charts/**/tmp/
@@ -189,20 +145,29 @@ helmfile*.lock
 *.tgz
 
 # ------------------------------------------------------------------------------
-# CI / Scanners outputs
+# Container / build artifacts
+# ------------------------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.override.yaml
+**/dist/
+**/build/
+**/target/
+**/*.tar
+**/*.tar.gz
+
+# ------------------------------------------------------------------------------
+# CI / scanner output
 # ------------------------------------------------------------------------------
 coverage/
 .nyc_output/
-*.lcov
-*.sarif
-*.spdx
-*.bom
-*.sbom
 reports/
 report/
+*.sarif
+*.sbom
+*.lcov
 
 # ------------------------------------------------------------------------------
-# OS / Editor
+# OS & editor
 # ------------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
@@ -218,19 +183,13 @@ Desktop.ini
 *.iml
 
 # ------------------------------------------------------------------------------
-# Node / Python / Go (common DevOps tooling)
+# Language tooling (DevOps scripting)
 # ------------------------------------------------------------------------------
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
 __pycache__/
 *.py[cod]
 .venv/
 venv/
-pip-wheel-metadata/
 
 # Go
 bin/
@@ -240,7 +199,7 @@ pkg/
 *.prof
 
 # ------------------------------------------------------------------------------
-# SSH keys / known hosts (never commit)
+# SSH (never commit)
 # ------------------------------------------------------------------------------
 **/.ssh/
 known_hosts
@@ -254,4 +213,3 @@ authorized_keys
 *.old
 *.orig
 *.save
-*.~*
