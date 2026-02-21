@@ -1,0 +1,24 @@
+# ArgoCD Server LoadBalancer Service
+# Creates a MetalLB-backed entrypoint for ArgoCD UI/API.
+# This is a SEPARATE Service from the Rancher-managed argocd-server
+# to avoid ownership conflicts.
+#
+# Traffic flow:
+#   HAProxy (VIP .22) → 192.168.20.200:443 → argocd-server pod :8443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server-lb
+  namespace: argocd
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.20.200"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: argocd-server
+  ports:
+    - name: https
+      port: 443
+      targetPort: 8443
+      protocol: TCP

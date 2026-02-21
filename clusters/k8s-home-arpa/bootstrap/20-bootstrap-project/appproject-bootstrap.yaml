@@ -53,3 +53,5 @@ spec:
     # ArgoCD config (argocd namespace)
     - group: ""
       kind: "ConfigMap"
+    - group: ""
+      kind: "Service"
