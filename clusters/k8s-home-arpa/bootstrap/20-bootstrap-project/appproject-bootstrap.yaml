@@ -24,8 +24,6 @@ spec:
     - server: "https://kubernetes.default.svc"
       namespace: "istio-system"
     - server: "https://kubernetes.default.svc"
-      namespace: "ingress-nginx"
-    - server: "https://kubernetes.default.svc"
       namespace: "monitoring"
     - server: "https://kubernetes.default.svc"
       namespace: "logging"

@@ -1,0 +1,85 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: "Strict platform project for k8s-home-arpa (allow-list only)"
+
+  # Only your repo is allowed
+  sourceRepos:
+    - "https://github.com/necdetsanli/homelab.git"
+    - "https://github.com/necdetsanli/homelab"
+
+  # Only these namespaces in THIS cluster are allowed
+  destinations:
+    - server: "https://kubernetes.default.svc"
+      namespace: "argocd"
+    - server: "https://kubernetes.default.svc"
+      namespace: "cert-manager"
+    - server: "https://kubernetes.default.svc"
+      namespace: "metallb-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "istio-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "monitoring"
+    - server: "https://kubernetes.default.svc"
+      namespace: "logging"
+    - server: "https://kubernetes.default.svc"
+      namespace: "security"
+
+  # Allow only the minimum cluster-scoped types platform components typically need
+  clusterResourceWhitelist:
+    - group: ""
+      kind: "Namespace"
+    - group: "apiextensions.k8s.io"
+      kind: "CustomResourceDefinition"
+    - group: "rbac.authorization.k8s.io"
+      kind: "ClusterRole"
+    - group: "rbac.authorization.k8s.io"
+      kind: "ClusterRoleBinding"
+    - group: "admissionregistration.k8s.io"
+      kind: "MutatingWebhookConfiguration"
+    - group: "admissionregistration.k8s.io"
+      kind: "ValidatingWebhookConfiguration"
+    - group: "cert-manager.io"
+      kind: "ClusterIssuer"
+    - group: "networking.k8s.io"
+      kind: "IngressClass"
+
+  # Namespaced allow-list (keep it tight)
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "ConfigMap"
+    - group: ""
+      kind: "Secret"
+    - group: ""
+      kind: "Service"
+    - group: ""
+      kind: "ServiceAccount"
+    - group: ""
+      kind: "Endpoints"
+    - group: ""
+      kind: "PersistentVolumeClaim"
+    - group: "apps"
+      kind: "Deployment"
+    - group: "apps"
+      kind: "StatefulSet"
+    - group: "apps"
+      kind: "DaemonSet"
+    - group: "batch"
+      kind: "Job"
+    - group: "batch"
+      kind: "CronJob"
+    - group: "rbac.authorization.k8s.io"
+      kind: "Role"
+    - group: "rbac.authorization.k8s.io"
+      kind: "RoleBinding"
+    - group: "networking.k8s.io"
+      kind: "Ingress"
+    - group: "networking.k8s.io"
+      kind: "NetworkPolicy"
+    - group: "policy"
+      kind: "PodDisruptionBudget"
+    - group: "autoscaling"
+      kind: "HorizontalPodAutoscaler"

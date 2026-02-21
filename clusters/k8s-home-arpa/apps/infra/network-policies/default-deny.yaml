@@ -32,18 +32,6 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: default-deny-ingress
-  namespace: ingress-nginx
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  podSelector: {}
-  policyTypes:
-    - Ingress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-ingress
   namespace: istio-system
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
