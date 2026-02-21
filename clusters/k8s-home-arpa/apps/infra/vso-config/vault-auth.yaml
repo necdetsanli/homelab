@@ -3,7 +3,7 @@
 #
 # Prerequisites (Vault side):
 #   - Kubernetes auth enabled at auth/kubernetes
-#   - Role "vso" bound to SA "vault-secrets-operator" in namespace "security"
+#   - Role "vso" bound to SA "vault-secrets-operator-controller-manager" in namespace "security"
 #   - Policy "vso" granting read on secret/data/*
 #
 # Traffic flow:
@@ -22,6 +22,6 @@ spec:
   mount: kubernetes
   kubernetes:
     role: vso
-    serviceAccount: vault-secrets-operator
+    serviceAccount: vault-secrets-operator-controller-manager
     audiences:
       - "vault"
