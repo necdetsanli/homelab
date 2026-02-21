@@ -1,0 +1,42 @@
+# Vault Kubernetes Auth — Token Reviewer
+# Vault (external VM) needs a long-lived K8s SA token to call the TokenReview
+# API and validate JWTs presented by in-cluster workloads (e.g. cert-manager).
+#
+# After deploying, extract the token and configure Vault:
+#   TOKEN=$(kubectl -n kube-system get secret vault-auth-token \
+#           -o jsonpath='{.data.token}' | base64 -d)
+#   vault write auth/kubernetes/config \
+#     kubernetes_host="https://192.168.20.30:6443" \
+#     kubernetes_ca_cert=@<(vault read -field=kubernetes_ca_cert auth/kubernetes/config) \
+#     token_reviewer_jwt="$TOKEN"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-auth
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vault-auth-delegator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: vault-auth
+    namespace: kube-system
+---
+# Long-lived token (auto-populated by K8s token controller).
+# Required because Vault runs outside the cluster and cannot use
+# in-cluster projected SA tokens.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-auth-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: vault-auth
+type: kubernetes.io/service-account-token
