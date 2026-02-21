@@ -4,7 +4,8 @@
 # to avoid ownership conflicts.
 #
 # Traffic flow:
-#   HAProxy (VIP .22) → 192.168.20.200:443 → argocd-server pod :8443
+#   HAProxy (VIP .22) → 192.168.20.200:80 → argocd-server pod :8080 (HTTP)
+#   TLS is terminated at HAProxy; backend is plain HTTP within the server VLAN.
 ---
 apiVersion: v1
 kind: Service
@@ -18,7 +19,7 @@ spec:
   selector:
     app.kubernetes.io/name: argocd-server
   ports:
-    - name: https
-      port: 443
-      targetPort: 8443
+    - name: http
+      port: 80
+      targetPort: 8080
       protocol: TCP
