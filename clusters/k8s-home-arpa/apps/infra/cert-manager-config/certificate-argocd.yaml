@@ -12,6 +12,7 @@ spec:
   issuerRef:
     name: vault-pki
     kind: ClusterIssuer
+  commonName: argocd.mgmt.home.arpa
   dnsNames:
     - argocd.mgmt.home.arpa
   duration: 720h    # 30 days (intermediate CA valid until 2031)
