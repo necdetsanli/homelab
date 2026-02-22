@@ -72,6 +72,7 @@ domains=(
   "ntopng.mgmt.home.arpa"
   "me30.mgmt.home.arpa"
   "argocd.mgmt.home.arpa"
+  "longhorn.mgmt.home.arpa"
   "vault.home.arpa"
   "vault.mgmt.home.arpa"
   "haproxy.mgmt.home.arpa"
