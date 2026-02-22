@@ -34,6 +34,13 @@ spec:
   destination:
     server: "https://kubernetes.default.svc"
     namespace: longhorn-system
+  ignoreDifferences:
+    # CRDs get server-side defaults (conversion strategy, status, etc.) that cause perpetual drift
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion
+        - .status
   syncPolicy:
     automated:
       prune: true
@@ -41,3 +48,4 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false
+      - RespectIgnoreDifferences=true
