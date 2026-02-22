@@ -28,6 +28,9 @@ spec:
           # TrueNAS NFS backup target — configure after NFS share is created
           backupTarget: ""
           backupTargetCredentialSecret: ""
+        preUpgradeChecker:
+          # Disable pre-upgrade hook — causes SA-not-found on fresh install via ArgoCD
+          jobEnabled: false
   destination:
     server: "https://kubernetes.default.svc"
     namespace: longhorn-system
