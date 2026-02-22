@@ -33,6 +33,8 @@ spec:
       namespace: "security"
     - server: "https://kubernetes.default.svc"
       namespace: "longhorn-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "gateway-system"
 
   clusterResourceWhitelist:
     - group: ""
