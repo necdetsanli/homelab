@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: bootstrap
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: "Bootstrap project — root app manages namespaces, projects, network policies, config, and child Applications"
+
+  # Drift detection: warn when un-tracked resources appear in managed namespaces
+  orphanedResources:
+    warn: true
+
+  sourceRepos:
+    - "https://github.com/necdetsanli/homelab.git"
+
+  # Root app creates resources in argocd + all platform namespaces
+  destinations:
+    - server: "https://kubernetes.default.svc"
+      namespace: "argocd"
+    - server: "https://kubernetes.default.svc"
+      namespace: "cert-manager"
+    - server: "https://kubernetes.default.svc"
+      namespace: "metallb-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "istio-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "monitoring"
+    - server: "https://kubernetes.default.svc"
+      namespace: "logging"
+    - server: "https://kubernetes.default.svc"
+      namespace: "security"
+    - server: "https://kubernetes.default.svc"
+      namespace: "longhorn-system"
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: "Namespace"
+
+  namespaceResourceWhitelist:
+    # ArgoCD objects (argocd namespace)
+    - group: "argoproj.io"
+      kind: "Application"
+    - group: "argoproj.io"
+      kind: "AppProject"
+    - group: "argoproj.io"
+      kind: "ApplicationSet"
+    # Network policies (all platform namespaces)
+    - group: "networking.k8s.io"
+      kind: "NetworkPolicy"
+    # Cilium-native network policies (enterprise-grade: fromEntities support)
+    - group: "cilium.io"
+      kind: "CiliumNetworkPolicy"
+    # ArgoCD config (argocd namespace)
+    - group: ""
+      kind: "ConfigMap"
+    - group: ""
+      kind: "Service"
