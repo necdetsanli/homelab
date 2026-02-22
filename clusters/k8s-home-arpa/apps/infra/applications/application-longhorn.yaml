@@ -34,20 +34,11 @@ spec:
   destination:
     server: "https://kubernetes.default.svc"
     namespace: longhorn-system
-  ignoreDifferences:
-    # CRDs get server-side defaults (conversion, status, and extensive openAPIV3Schema
-    # normalization — default values, field ordering, nullable flags) that cause perpetual drift
-    - group: apiextensions.k8s.io
-      kind: CustomResourceDefinition
-      jqPathExpressions:
-        - .spec.conversion
-        - .spec.versions[]?.schema.openAPIV3Schema
-        - .status
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - ServerSideApply=true
+      - ServerSideDiff=true
       - CreateNamespace=false
-      - RespectIgnoreDifferences=true
