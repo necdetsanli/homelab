@@ -25,8 +25,8 @@ spec:
           storageOverProvisioningPercentage: 100
           # Keep 15% disk free as safety margin
           storageMinimalAvailablePercentage: 15
-          # TrueNAS NFS backup target — configure after NFS share is created
-          backupTarget: ""
+          # TrueNAS NFS backup target — off-cluster disaster recovery
+          backupTarget: "nfs://192.168.20.50:/mnt/tank/backups/longhorn"
           backupTargetCredentialSecret: ""
         preUpgradeChecker:
           # Disable pre-upgrade hook — causes SA-not-found on fresh install via ArgoCD
