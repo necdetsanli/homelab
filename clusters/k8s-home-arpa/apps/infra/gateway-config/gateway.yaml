@@ -1,0 +1,20 @@
+# Shared platform Gateway — single MetalLB VIP for all HTTP services.
+# HAProxy terminates external TLS, forwards plain HTTP to this Gateway.
+# Individual HTTPRoutes per service handle hostname-based routing.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: platform-gateway
+  namespace: gateway-system
+  annotations:
+    # Request a specific MetalLB IP from the existing pool (192.168.20.200-250)
+    metallb.io/loadbalancer-ips: "192.168.20.201"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All

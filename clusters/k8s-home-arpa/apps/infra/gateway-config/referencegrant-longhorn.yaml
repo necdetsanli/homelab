@@ -1,0 +1,16 @@
+# Allow the platform-gateway (in gateway-system) to reference the
+# longhorn-frontend Service in longhorn-system. Required by Gateway API
+# for cross-namespace backend references.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gateway-to-longhorn
+  namespace: longhorn-system
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: longhorn-system
+  to:
+    - group: ""
+      kind: Service

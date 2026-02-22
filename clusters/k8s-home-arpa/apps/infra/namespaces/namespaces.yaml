@@ -74,7 +74,14 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: longhorn-system
+  name: gateway-system
+  labels:
+    homelab.necdetsanli.io/tier: platform
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
   labels:
     homelab.necdetsanli.io/tier: platform
     # Longhorn CSI plugin + manager need privileged access for block device management

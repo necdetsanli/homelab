@@ -27,5 +27,6 @@
 /etc/haproxy/certs/ntopng.mgmt.home.arpa.pem      ntopng.mgmt.home.arpa
 /etc/haproxy/certs/me30.mgmt.home.arpa.pem        me30.mgmt.home.arpa
 /etc/haproxy/certs/argocd.mgmt.home.arpa.pem      argocd.mgmt.home.arpa
+/etc/haproxy/certs/longhorn.mgmt.home.arpa.pem    longhorn.mgmt.home.arpa
 /etc/haproxy/certs/vault.mgmt.home.arpa.pem       vault.mgmt.home.arpa
 /etc/haproxy/certs/haproxy.mgmt.home.arpa.pem     haproxy.mgmt.home.arpa

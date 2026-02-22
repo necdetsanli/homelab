@@ -35,6 +35,8 @@ spec:
     - server: "https://kubernetes.default.svc"
       namespace: "longhorn-system"
     - server: "https://kubernetes.default.svc"
+      namespace: "gateway-system"
+    - server: "https://kubernetes.default.svc"
       namespace: "argocd"
     # cert-manager needs leader election Roles/RoleBindings in kube-system
     - server: "https://kubernetes.default.svc"

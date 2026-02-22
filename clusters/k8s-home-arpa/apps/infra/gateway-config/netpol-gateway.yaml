@@ -1,0 +1,20 @@
+# Allow HAProxy (edge tier) to reach the Cilium Gateway proxy pods.
+# HAProxy forwards plain HTTP from the VIP (192.168.20.22) after TLS termination.
+# The edge nodes are 192.168.20.20 and 192.168.20.21.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-haproxy-ingress
+  namespace: gateway-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromCIDR:
+        - 192.168.20.20/32
+        - 192.168.20.21/32
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP

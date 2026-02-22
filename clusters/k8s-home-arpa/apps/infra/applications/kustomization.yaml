@@ -10,5 +10,6 @@ resources:
   - application-vso-config.yaml
   - application-longhorn.yaml
   - application-gateway-api.yaml
+  - application-gateway-config.yaml
   # - application-ingress-nginx.yaml   # Removed: HAProxy edge tier handles routing
   # - application-istio.yaml           # Future consideration
