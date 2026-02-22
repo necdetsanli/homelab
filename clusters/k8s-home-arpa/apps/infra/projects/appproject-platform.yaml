@@ -1,0 +1,158 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: "Platform components for k8s-home-arpa (strict allow-list)"
+
+  # Drift detection: warn when un-tracked resources appear in managed namespaces
+  orphanedResources:
+    warn: true
+
+  sourceRepos:
+    - "https://github.com/necdetsanli/homelab.git"
+    - "https://charts.jetstack.io"                   # cert-manager
+    - "https://metallb.github.io/metallb"             # metallb
+    - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
+    - "https://charts.longhorn.io"                       # longhorn
+
+  destinations:
+    - server: "https://kubernetes.default.svc"
+      namespace: "cert-manager"
+    - server: "https://kubernetes.default.svc"
+      namespace: "metallb-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "istio-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "monitoring"
+    - server: "https://kubernetes.default.svc"
+      namespace: "logging"
+    - server: "https://kubernetes.default.svc"
+      namespace: "security"
+    - server: "https://kubernetes.default.svc"
+      namespace: "longhorn-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "argocd"
+    # cert-manager needs leader election Roles/RoleBindings in kube-system
+    - server: "https://kubernetes.default.svc"
+      namespace: "kube-system"
+
+  # Cluster-scoped resources: strict allow-list
+  clusterResourceWhitelist:
+    - group: ""
+      kind: "Namespace"
+    - group: "apiextensions.k8s.io"
+      kind: "CustomResourceDefinition"
+    - group: "rbac.authorization.k8s.io"
+      kind: "ClusterRole"
+    - group: "rbac.authorization.k8s.io"
+      kind: "ClusterRoleBinding"
+    - group: "admissionregistration.k8s.io"
+      kind: "MutatingWebhookConfiguration"
+    - group: "admissionregistration.k8s.io"
+      kind: "ValidatingWebhookConfiguration"
+    - group: "cert-manager.io"
+      kind: "ClusterIssuer"
+    - group: "networking.k8s.io"
+      kind: "IngressClass"
+    # Longhorn storage (cluster-scoped)
+    - group: "storage.k8s.io"
+      kind: "StorageClass"
+    - group: "storage.k8s.io"
+      kind: "CSIDriver"
+    - group: ""
+      kind: "PersistentVolume"
+    # Longhorn PriorityClass (cluster-scoped)
+    - group: "scheduling.k8s.io"
+      kind: "PriorityClass"
+    # Cilium BGP Control Plane (cluster-scoped)
+    - group: "cilium.io"
+      kind: "CiliumBGPClusterConfig"
+    - group: "cilium.io"
+      kind: "CiliumBGPPeerConfig"
+    - group: "cilium.io"
+      kind: "CiliumBGPAdvertisement"
+    - group: "cilium.io"
+      kind: "CiliumBGPNodeConfigOverride"
+    # VSO (Vault Secrets Operator) cluster-scoped CRDs
+    - group: "secrets.hashicorp.com"
+      kind: "VaultAuthGlobal"
+
+  # Namespaced resources: strict allow-list
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "ConfigMap"
+    - group: ""
+      kind: "Secret"
+    - group: ""
+      kind: "Service"
+    - group: ""
+      kind: "ServiceAccount"
+    - group: ""
+      kind: "Endpoints"
+    - group: ""
+      kind: "PersistentVolumeClaim"
+    - group: "apps"
+      kind: "Deployment"
+    - group: "apps"
+      kind: "StatefulSet"
+    - group: "apps"
+      kind: "DaemonSet"
+    - group: "batch"
+      kind: "Job"
+    - group: "batch"
+      kind: "CronJob"
+    - group: "rbac.authorization.k8s.io"
+      kind: "Role"
+    - group: "rbac.authorization.k8s.io"
+      kind: "RoleBinding"
+    - group: "networking.k8s.io"
+      kind: "Ingress"
+    - group: "networking.k8s.io"
+      kind: "NetworkPolicy"
+    # Cilium-native network policies (enterprise-grade: fromEntities support)
+    - group: "cilium.io"
+      kind: "CiliumNetworkPolicy"
+    - group: "policy"
+      kind: "PodDisruptionBudget"
+    - group: "autoscaling"
+      kind: "HorizontalPodAutoscaler"
+    # Allow Argo CD objects only inside argocd namespace (where they live)
+    - group: "argoproj.io"
+      kind: "Application"
+    - group: "argoproj.io"
+      kind: "AppProject"
+    - group: "argoproj.io"
+      kind: "ApplicationSet"
+    # MetalLB configuration resources
+    - group: "metallb.io"
+      kind: "IPAddressPool"
+    - group: "metallb.io"
+      kind: "L2Advertisement"
+    - group: "metallb.io"
+      kind: "BGPPeer"
+    - group: "metallb.io"
+      kind: "BGPAdvertisement"
+    # cert-manager namespaced resources
+    - group: "cert-manager.io"
+      kind: "Certificate"
+    - group: "cert-manager.io"
+      kind: "Issuer"
+    # VSO (Vault Secrets Operator) namespaced resources
+    - group: "secrets.hashicorp.com"
+      kind: "VaultConnection"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultAuth"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultStaticSecret"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultDynamicSecret"
+    - group: "secrets.hashicorp.com"
+      kind: "VaultPKISecret"
+    - group: "secrets.hashicorp.com"
+      kind: "HCPAuth"
+    - group: "secrets.hashicorp.com"
+      kind: "HCPVaultSecretsApp"
