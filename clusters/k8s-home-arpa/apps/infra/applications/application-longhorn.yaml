@@ -35,21 +35,20 @@ spec:
     server: "https://kubernetes.default.svc"
     namespace: longhorn-system
   ignoreDifferences:
-    # Longhorn controller (longhorn-manager) injects conversion webhook config
-    # (caBundle, service) into CRDs post-creation. With ServerSideDiff, only
-    # managedFieldsManagers is honoured for ignoreDifferences — jsonPointers
-    # and jqPathExpressions are ignored. Exclude longhorn-manager's fields
-    # so its CRD modifications don't cause perpetual drift.
+    # Longhorn controller injects conversion webhook (caBundle, service endpoint)
+    # and kube-apiserver normalizes openAPIV3Schema (defaults, nullable, ordering)
+    # into CRDs post-creation. Ignore the entire CRD spec and status to prevent
+    # perpetual OutOfSync from controller-managed and API-server-normalized fields.
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
-      managedFieldsManagers:
-        - longhorn-manager
+      jsonPointers:
+        - /spec
+        - /status
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - ServerSideApply=true
-      - ServerSideDiff=true
       - CreateNamespace=false
       - RespectIgnoreDifferences=true
