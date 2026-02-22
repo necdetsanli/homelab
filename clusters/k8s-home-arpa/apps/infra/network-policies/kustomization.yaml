@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - default-deny.yaml
   - allow-webhooks.yaml
+  - allow-gateway-ingress.yaml

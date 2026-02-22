@@ -1,0 +1,32 @@
+# Allow Cilium Gateway API proxy (Envoy) to reach backend services.
+#
+# With gatewayAPI.hostNetwork.enabled: true, the Envoy proxy runs with
+# hostNetwork and appears as reserved:host identity in Cilium. Each
+# service exposed via an HTTPRoute needs an explicit ingress policy
+# allowing traffic from host on the service port.
+#
+# This is the enterprise-grade pattern: one policy per exposed service,
+# minimal port surface, co-located in the central network-policies
+# directory for audit visibility.
+---
+# Longhorn UI: allow Gateway proxy to reach longhorn-frontend on port 8000
+# (Service port is 80, but target port is 8000 on the pod)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-longhorn-ui
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app: longhorn-ui
+  ingress:
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
