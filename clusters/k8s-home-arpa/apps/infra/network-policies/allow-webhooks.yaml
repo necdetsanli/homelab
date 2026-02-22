@@ -72,3 +72,44 @@ spec:
         - ports:
             - port: "9402"
               protocol: TCP
+---
+# Longhorn admission + conversion webhooks (ports 9502, 9501)
+# Validates: Volume, Setting, Node, etc.
+# Longhorn manager pods serve both admission and conversion webhooks.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-apiserver-webhook
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app: longhorn-manager
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "9502"
+              protocol: TCP
+            - port: "9501"
+              protocol: TCP
+---
+# Longhorn intra-namespace communication
+# Manager pods call their own admission webhook service (pod-to-pod),
+# driver-deployer init container calls manager API, CSI plugin pods
+# communicate with manager. All require intra-namespace ingress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-longhorn-internal
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
