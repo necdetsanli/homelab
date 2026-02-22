@@ -4,7 +4,7 @@ metadata:
   name: platform
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   description: "Platform components for k8s-home-arpa (strict allow-list)"
 

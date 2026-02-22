@@ -4,7 +4,7 @@ metadata:
   name: bootstrap
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   description: "Bootstrap project — root app manages namespaces, projects, network policies, config, and child Applications"
 
