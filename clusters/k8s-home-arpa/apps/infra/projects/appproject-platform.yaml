@@ -36,9 +36,6 @@ spec:
       namespace: "longhorn-system"
     - server: "https://kubernetes.default.svc"
       namespace: "argocd"
-    # Gateway API CRDs are cluster-scoped; namespace is only for ArgoCD project matching
-    - server: "https://kubernetes.default.svc"
-      namespace: "default"
     # cert-manager needs leader election Roles/RoleBindings in kube-system
     - server: "https://kubernetes.default.svc"
       namespace: "kube-system"
