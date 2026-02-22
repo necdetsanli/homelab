@@ -17,6 +17,7 @@ spec:
     - "https://charts.jetstack.io"                   # cert-manager
     - "https://metallb.github.io/metallb"             # metallb
     - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
+    - "https://charts.longhorn.io"                       # longhorn
 
   destinations:
     - server: "https://kubernetes.default.svc"
@@ -31,6 +32,8 @@ spec:
       namespace: "logging"
     - server: "https://kubernetes.default.svc"
       namespace: "security"
+    - server: "https://kubernetes.default.svc"
+      namespace: "longhorn-system"
     - server: "https://kubernetes.default.svc"
       namespace: "argocd"
     # cert-manager needs leader election Roles/RoleBindings in kube-system
@@ -55,6 +58,13 @@ spec:
       kind: "ClusterIssuer"
     - group: "networking.k8s.io"
       kind: "IngressClass"
+    # Longhorn storage (cluster-scoped)
+    - group: "storage.k8s.io"
+      kind: "StorageClass"
+    - group: "storage.k8s.io"
+      kind: "CSIDriver"
+    - group: ""
+      kind: "PersistentVolume"
     # Cilium BGP Control Plane (cluster-scoped)
     - group: "cilium.io"
       kind: "CiliumBGPClusterConfig"

@@ -10,6 +10,10 @@ spec:
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
     - "https://github.com/necdetsanli/homelab"
+    - "https://charts.jetstack.io"                   # cert-manager
+    - "https://metallb.github.io/metallb"             # metallb
+    - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
+    - "https://charts.longhorn.io"                     # longhorn
 
   # Only these namespaces in THIS cluster are allowed
   destinations:
@@ -27,6 +31,8 @@ spec:
       namespace: "logging"
     - server: "https://kubernetes.default.svc"
       namespace: "security"
+    - server: "https://kubernetes.default.svc"
+      namespace: "longhorn-system"
 
   # Allow only the minimum cluster-scoped types platform components typically need
   clusterResourceWhitelist:

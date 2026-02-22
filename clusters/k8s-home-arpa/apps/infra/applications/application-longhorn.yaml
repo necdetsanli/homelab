@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://charts.longhorn.io"
+    chart: longhorn
+    targetRevision: 1.7.2
+    helm:
+      releaseName: longhorn
+      valuesObject:
+        persistence:
+          defaultClass: true
+          defaultClassReplicaCount: 2
+          reclaimPolicy: "Retain"
+        defaultSettings:
+          # 2 worker nodes — replica count must match
+          defaultReplicaCount: 2
+          # Allow overprovisioning (sum of PVC requests can exceed physical capacity)
+          storageOverProvisioningPercentage: 100
+          # Keep 15% disk free as safety margin
+          storageMinimalAvailablePercentage: 15
+          # TrueNAS NFS backup target — configure after NFS share is created
+          backupTarget: ""
+          backupTargetCredentialSecret: ""
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: longhorn-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
