@@ -1,0 +1,208 @@
+# =============================================================================
+# Cilium Enterprise Helm Values — k8s-home-arpa
+# =============================================================================
+#
+# These are Helm value OVERRIDES for the rke2-cilium chart managed by Rancher.
+# Only non-default values are listed. For full defaults run:
+#   helm show values rke2-cilium --repo https://rke2-charts.rancher.io
+#
+# Applied via:  Rancher UI → Cluster Management → k8s-home-arpa → Edit YAML
+#               spec.rkeConfig.chartValues.rke2-cilium
+#
+# Base chart:   rke2-cilium (Cilium v1.19.0)
+# Platform:     RKE2 v1.34.4+rke2r1, CIS Profile, rancher-restricted PSA
+# Nodes:        3 (1 control-plane, 2 workers)
+# Network:      10.42.0.0/16 (pods), 10.43.0.0/16 (services)
+#
+# Architecture:
+#   HAProxy (edge VMs) → Cilium Gateway API (embedded Envoy) → Backend pods
+#   BGP peering: Cilium AS 64501 ↔ OPNsense AS 64500
+#   Cilium LB-IPAM + L2 announcements (replaces MetalLB)
+#   Observability: Prometheus + Grafana + Hubble (L3–L7 flows)
+#
+# Companion CRDs (managed by ArgoCD):
+#   - CiliumBGPClusterConfig      → clusters/.../cilium-bgp/
+#   - CiliumLoadBalancerIPPool    → clusters/.../cilium-lb/
+#   - CiliumL2AnnouncementPolicy  → clusters/.../cilium-lb/
+#   - Gateway / HTTPRoute          → clusters/.../gateway-config/
+# =============================================================================
+
+# ─── Core Networking ──────────────────────────────────────────────────────────
+# Native routing with direct node routes eliminates VXLAN overlay entirely.
+# Combined with eBPF masquerade and tproxy, this creates a fully eBPF datapath
+# with zero iptables rules in the forwarding path.
+routingMode: native
+ipv4NativeRoutingCIDR: "10.42.0.0/16"
+autoDirectNodeRoutes: true
+enableIPv4Masquerade: true
+kubeProxyReplacement: "true"
+k8sServiceHost: localhost
+k8sServicePort: "6443"
+
+# ─── Cluster Identity ────────────────────────────────────────────────────────
+# Meaningful name for Hubble flow metadata, Prometheus labels, and
+# multi-cluster readiness. id must be unique per cluster (1–255).
+cluster:
+  id: 1
+  name: k8s-home-arpa
+
+# ─── eBPF Datapath ───────────────────────────────────────────────────────────
+# masquerade:  eBPF-native SNAT replaces iptables MASQUERADE chain.
+#              Required for a pure eBPF datapath when enableIPv4Masquerade=true.
+# tproxy:      Moves transparent proxy handling (Envoy) entirely into eBPF.
+#              CRITICAL for embedded Envoy + Gateway API — without this,
+#              iptables-based TPROXY creates socket mark conflicts that
+#              cause Envoy → backend pod upstream connection timeouts.
+bpf:
+  masquerade: true
+  tproxy: true
+
+# ─── Socket-Level Load Balancing ─────────────────────────────────────────────
+# Intercepts at the connect() syscall, bypassing full per-packet processing
+# for east-west service traffic. Required for kubeProxyReplacement.
+socketLB:
+  enabled: true
+
+# ─── Bandwidth Management ────────────────────────────────────────────────────
+# EDT (Earliest Departure Time) based rate limiting with BBR congestion
+# control. Provides fair queuing and reduces tail latency under load.
+# Requires kernel >= 5.18 (RKE2 v1.34 ships kernel 6.x).
+bandwidthManager:
+  enabled: true
+  bbr: true
+
+# ─── IP Address Management ───────────────────────────────────────────────────
+# Cilium-native LB IP allocation replaces MetalLB entirely.
+# Service VIPs assigned via CiliumLoadBalancerIPPool CRD.
+enableLBIPAM: true
+
+# L2 announcements handle ARP/NDP for Service LoadBalancer VIPs.
+# Replaces MetalLB L2Advertisement. Cilium responds to ARP queries
+# for allocated VIPs directly from the eBPF datapath.
+# Requires CiliumL2AnnouncementPolicy CRD to configure policies.
+l2announcements:
+  enabled: true
+
+# Proactive ARP/NDP neighbor table management.
+# Keeps neighbor entries fresh, reducing first-packet latency
+# on native routing networks without tunneling.
+l2NeighDiscovery:
+  enabled: true
+
+# ─── BGP Control Plane ───────────────────────────────────────────────────────
+# Peers with OPNsense gateway (192.168.20.1, AS 64500).
+# Advertises pod CIDRs for direct routing from external networks.
+# Configuration via CiliumBGPClusterConfig CRD (managed by ArgoCD).
+bgpControlPlane:
+  enabled: true
+
+# ─── Gateway API (Embedded Envoy L7 Routing) ─────────────────────────────────
+# Uses embedded Envoy inside cilium-agent for L7 routing.
+# enableAlpn:         HTTP/2 ALPN negotiation in TLS handshakes.
+# enableAppProtocol:  Respects appProtocol field on Service ports
+#                     (gRPC, HTTP2, WebSocket auto-detection).
+# xffNumTrustedHops:  HAProxy is 1 trusted proxy hop upstream.
+#                     Ensures X-Forwarded-For is parsed correctly and
+#                     the real client IP is preserved for policy evaluation.
+gatewayAPI:
+  enabled: true
+  enableAlpn: true
+  enableAppProtocol: true
+  xffNumTrustedHops: 1
+
+# CiliumEnvoyConfig CRD support for advanced Envoy configuration
+# beyond Gateway API resources (custom filters, rate limits, retries).
+envoyConfig:
+  enabled: true
+
+# ─── Observability: Cilium Agent Prometheus ───────────────────────────────────
+# Exposes metrics on :9962/metrics — scraped by Prometheus for:
+#   - BPF map utilization and pressure
+#   - Policy verdict counters (allow/deny)
+#   - Conntrack entries and overflow events
+#   - Endpoint health and identity allocation
+#   - Forwarding/drop counters per reason
+prometheus:
+  enabled: true
+  controllerGroupMetrics:
+    - write-cni-file
+    - sync-host-ips
+    - sync-lb-maps-with-k8s-services
+
+# ─── Observability: Hubble (L3–L7 Flow Visibility) ───────────────────────────
+# Hubble is the observability backbone — provides per-flow visibility
+# across all layers. Integrates with Prometheus, Grafana, and the
+# Hubble UI for real-time service map visualization.
+hubble:
+  enabled: true
+
+  # Emit Kubernetes Warning events when traffic is dropped due to
+  # policy-denied or auth-required. Surfaces in `kubectl get events`
+  # and can be collected by ELK/Loki/Zabbix event watchers.
+  dropEventEmitter:
+    enabled: true
+    interval: 2m
+    reasons:
+      - auth_required
+      - policy_denied
+
+  # Hubble metrics exposed as Prometheus endpoints on :9965/metrics.
+  # httpV2 with labelsContext provides per-workload HTTP golden signals
+  # (request rate, error rate, latency) — the foundation for Grafana
+  # dashboards and alerting rules.
+  #
+  # Scrape targets:
+  #   Prometheus  → :9965/metrics (Hubble)
+  #   Grafana     → auto-provisioned dashboards via ConfigMap sidecar
+  #   Loki        → collect via hubble.export.static (enable when deployed)
+  #   ELK         → collect Hubble flow logs from /var/run/cilium/hubble/
+  #   Zabbix      → scrape Prometheus endpoint or use Zabbix Prometheus item
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - "httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction"
+    enableOpenMetrics: true
+    dashboards:
+      enabled: true
+
+  # Hubble Relay aggregates flows from all nodes.
+  # Required for `hubble observe` CLI and Hubble UI connectivity.
+  relay:
+    enabled: true
+
+  # Hubble UI: real-time Service Map visualization.
+  # Access via kubectl port-forward or expose via Gateway API HTTPRoute.
+  ui:
+    enabled: true
+
+  # (Optional) Export flow logs to file for Loki/ELK/Fluentd ingestion.
+  # Enable when logging stack is deployed. Logs are written per-node to
+  # /var/run/cilium/hubble/events.log — collect with DaemonSet agent.
+  # export:
+  #   static:
+  #     enabled: true
+  #     filePath: /var/run/cilium/hubble/events.log
+  #     fileMaxSizeMb: 10
+  #     fileMaxBackups: 5
+  #     fileCompress: true
+
+# ─── Grafana Dashboards ──────────────────────────────────────────────────────
+# Auto-provision Cilium dashboards as ConfigMaps with label
+# grafana_dashboard: "1". Grafana sidecar discovers and imports them.
+# Includes: Agent, Operator, Hubble, Gateway API, Network Policy dashboards.
+dashboards:
+  enabled: true
+
+# ─── Operator ─────────────────────────────────────────────────────────────────
+operator:
+  replicas: 2                     # HA: 2 replicas with pod anti-affinity (default)
+  dashboards:
+    enabled: true                 # Grafana dashboards for operator metrics
+  podDisruptionBudget:
+    enabled: true                 # Ensure >= 1 operator during disruptions
+    maxUnavailable: 1

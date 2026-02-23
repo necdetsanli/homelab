@@ -1,0 +1,212 @@
+# =============================================================================
+# Rancher Provisioning Cluster — k8s-home-arpa
+# =============================================================================
+#
+# This is a sanitized reference copy of the Rancher-managed cluster resource.
+# Applied via:  Rancher UI → Cluster Management → k8s-home-arpa → Edit YAML
+#
+# DO NOT apply directly with kubectl. Rancher manages the full lifecycle.
+# Runtime fields (uid, resourceVersion, managedFields, status) are stripped.
+#
+# Sensitive data: None. All IPs are RFC 1918 private addresses.
+#                 Secrets are referenced by name only (content not stored).
+# =============================================================================
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: k8s-home-arpa
+  namespace: fleet-default
+  annotations:
+    field.cattle.io/description: "K8s Main Workload"
+    provisioning.cattle.io/management-cluster-display-name: k8s-home-arpa
+spec:
+  # ─── Pod Security ──────────────────────────────────────────────────────────
+  # Rancher-managed PSA template. Enforces restricted profile cluster-wide.
+  # CIS 1.8+ compliance for pod security standards.
+  defaultPodSecurityAdmissionConfigurationTemplateName: rancher-restricted
+
+  # ─── Kubernetes Version ────────────────────────────────────────────────────
+  kubernetesVersion: v1.34.4+rke2r1
+
+  localClusterAuthEndpoint: {}
+
+  rkeConfig:
+    # ─── Cilium Helm Overrides ─────────────────────────────────────────────
+    # See infrastructure/rancher/cilium-values.yaml for detailed documentation.
+    # These overrides are applied to the rke2-cilium HelmChart by Rancher.
+    chartValues:
+      rke2-cilium:
+        # Core Networking
+        routingMode: native
+        ipv4NativeRoutingCIDR: "10.42.0.0/16"
+        autoDirectNodeRoutes: true
+        enableIPv4Masquerade: true
+        kubeProxyReplacement: "true"
+        k8sServiceHost: localhost
+        k8sServicePort: "6443"
+
+        # Cluster Identity
+        cluster:
+          id: 1
+          name: k8s-home-arpa
+
+        # eBPF Datapath (pure eBPF, zero iptables in forwarding path)
+        bpf:
+          masquerade: true
+          tproxy: true
+
+        # Socket-Level LB (connect() syscall interception)
+        socketLB:
+          enabled: true
+
+        # Bandwidth Management (EDT + BBR)
+        bandwidthManager:
+          enabled: true
+          bbr: true
+
+        # LB-IPAM + L2 Announcements (replaces MetalLB)
+        enableLBIPAM: true
+        l2announcements:
+          enabled: true
+        l2NeighDiscovery:
+          enabled: true
+
+        # BGP Control Plane (peered with OPNsense)
+        bgpControlPlane:
+          enabled: true
+
+        # Gateway API (embedded Envoy)
+        gatewayAPI:
+          enabled: true
+          enableAlpn: true
+          enableAppProtocol: true
+          xffNumTrustedHops: 1
+        envoyConfig:
+          enabled: true
+
+        # Observability: Prometheus
+        prometheus:
+          enabled: true
+          controllerGroupMetrics:
+            - write-cni-file
+            - sync-host-ips
+            - sync-lb-maps-with-k8s-services
+
+        # Observability: Hubble
+        hubble:
+          enabled: true
+          dropEventEmitter:
+            enabled: true
+            interval: 2m
+            reasons:
+              - auth_required
+              - policy_denied
+          metrics:
+            enabled:
+              - dns
+              - drop
+              - tcp
+              - flow
+              - port-distribution
+              - icmp
+              - "httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction"
+            enableOpenMetrics: true
+            dashboards:
+              enabled: true
+          relay:
+            enabled: true
+          ui:
+            enabled: true
+
+        # Grafana Dashboards (auto-provisioned as ConfigMaps)
+        dashboards:
+          enabled: true
+        operator:
+          replicas: 2
+          dashboards:
+            enabled: true
+          podDisruptionBudget:
+            enabled: true
+            maxUnavailable: 1
+
+    dataDirectories: {}
+
+    # ─── etcd ──────────────────────────────────────────────────────────────
+    etcd:
+      snapshotRetention: 5
+      snapshotScheduleCron: "0 */5 * * *"       # Every 5 hours
+
+    # ─── RKE2 Global Config ────────────────────────────────────────────────
+    machineGlobalConfig:
+      cluster-cidr: 10.42.0.0/16
+      cluster-domain: cluster.local
+      cni: cilium
+      service-cidr: 10.43.0.0/16
+
+      # Disable components replaced by Cilium / Gateway API
+      disable:
+        - rke2-ingress-nginx
+      disable-kube-proxy: true
+
+      # Monitoring: expose etcd metrics for Prometheus scraping
+      etcd-expose-metrics: true
+
+      # API server TLS SANs (add all access points)
+      tls-san:
+        - k8s-master-1.home.arpa
+        - 192.168.20.30
+
+      # CIS Profile: PSA admission config
+      kube-apiserver-arg:
+        - "admission-control-config-file=/etc/rancher/rke2/config/rancher-psact.yaml"
+
+    # ─── Node Configuration ────────────────────────────────────────────────
+    machineSelectorConfig:
+      - config:
+          profile: cis                           # CIS benchmark hardening
+          protect-kernel-defaults: true          # Prevent sysctl override
+
+    # ─── PSA Admission Config File ─────────────────────────────────────────
+    # Rancher distributes the admission config to control-plane nodes
+    # via a Secret. File is mounted at the path referenced by kube-apiserver-arg.
+    machineSelectorFiles:
+      - fileSources:
+          - configMap:
+              name: ""
+            secret:
+              items:
+                - hash: "u9+jBuFoAndYNKDlvLYLLHgdBEd56gMpJrUJWYMLKZU="
+                  key: admission-config-psact
+                  path: /etc/rancher/rke2/config/rancher-psact.yaml
+              name: k8s-home-arpa-admission-configuration-psact
+        machineLabelSelector:
+          matchLabels:
+            rke.cattle.io/control-plane-role: "true"
+
+    networking: {}
+    registries: {}
+
+    # ─── Upgrade Strategy ──────────────────────────────────────────────────
+    # Sequential upgrades (concurrency 1) for safety with 3-node cluster.
+    # Drain enabled: gracefully evicts workloads before node upgrade.
+    upgradeStrategy:
+      controlPlaneConcurrency: "1"
+      controlPlaneDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: true                            # Drain before control-plane upgrade
+        force: false
+        gracePeriod: -1                          # Use pod's terminationGracePeriodSeconds
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+      workerConcurrency: "1"
+      workerDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: true                            # Drain before worker upgrade
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120

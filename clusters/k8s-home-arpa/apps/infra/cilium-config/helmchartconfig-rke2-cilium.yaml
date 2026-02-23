@@ -1,7 +1,9 @@
 # ----------------------------------------------------------
-# RKE2 Cilium HelmChartConfig — custom overrides only
-# Applied via Rancher GUI (Apps → rke2-cilium)
-# This file is a reference copy for version tracking.
+# RKE2 Cilium HelmChartConfig — MANAGED BY RANCHER
+# ----------------------------------------------------------
+# This file is a reference copy only.
+# Source of truth: Rancher UI → Cluster Management → k8s-home-arpa
+# Detailed docs:  infrastructure/rancher/cilium-values.yaml
 # ----------------------------------------------------------
 # Base chart: rancher/rke2-cilium (Cilium v1.19.0)
 # Cluster:    k8s-home-arpa (RKE2 v1.34.4+rke2r1)
@@ -13,23 +15,95 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    # --- Routing Mode ---
-    # Native routing instead of VXLAN tunneling.
-    # Preserves source identity end-to-end (critical for
-    # CiliumNetworkPolicy fromEntities: kube-apiserver).
+    # Core Networking
     routingMode: native
     ipv4NativeRoutingCIDR: "10.42.0.0/16"
     autoDirectNodeRoutes: true
-
-    # --- Masquerade ---
     enableIPv4Masquerade: true
-
-    # --- Kube-Proxy Replacement ---
     kubeProxyReplacement: "true"
+    k8sServiceHost: localhost
+    k8sServicePort: "6443"
 
-    # --- BGP Control Plane ---
-    # Advertises pod CIDRs and LoadBalancer IPs to OPNsense
-    # via eBGP (Cilium AS 64501 ↔ OPNsense AS 64500).
-    # CRDs (CiliumBGPClusterConfig, etc.) live in cilium-bgp/.
+    # Cluster Identity
+    cluster:
+      id: 1
+      name: k8s-home-arpa
+
+    # eBPF Datapath
+    bpf:
+      masquerade: true
+      tproxy: true
+
+    # Socket-Level LB
+    socketLB:
+      enabled: true
+
+    # Bandwidth Management
+    bandwidthManager:
+      enabled: true
+      bbr: true
+
+    # LB-IPAM + L2 (replaces MetalLB)
+    enableLBIPAM: true
+    l2announcements:
+      enabled: true
+    l2NeighDiscovery:
+      enabled: true
+
+    # BGP Control Plane
     bgpControlPlane:
       enabled: true
+
+    # Gateway API
+    gatewayAPI:
+      enabled: true
+      enableAlpn: true
+      enableAppProtocol: true
+      xffNumTrustedHops: 1
+    envoyConfig:
+      enabled: true
+
+    # Observability: Prometheus
+    prometheus:
+      enabled: true
+      controllerGroupMetrics:
+        - write-cni-file
+        - sync-host-ips
+        - sync-lb-maps-with-k8s-services
+
+    # Observability: Hubble
+    hubble:
+      enabled: true
+      dropEventEmitter:
+        enabled: true
+        interval: 2m
+        reasons:
+          - auth_required
+          - policy_denied
+      metrics:
+        enabled:
+          - dns
+          - drop
+          - tcp
+          - flow
+          - port-distribution
+          - icmp
+          - "httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction"
+        enableOpenMetrics: true
+        dashboards:
+          enabled: true
+      relay:
+        enabled: true
+      ui:
+        enabled: true
+
+    # Grafana Dashboards
+    dashboards:
+      enabled: true
+    operator:
+      replicas: 2
+      dashboards:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1
