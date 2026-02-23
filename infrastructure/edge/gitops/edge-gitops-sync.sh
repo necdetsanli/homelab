@@ -269,27 +269,14 @@ main() {
     reload_keepalived || true
   fi
 
-  # ── Sync certsync config to edge-2 (VIP owner only) ──
-  # NOTE: haproxy-certs-send requires the certsync SSH key. Since gitops
-  # runs as root, we use rsync directly with the certsync user's key.
-  # PEM bundles are NOT synced here (only config files: crt-list + allowlist).
-  # Full PEM sync happens via vault-acme-issue-all.service ExecStartPost.
-  if "${need_haproxy}"; then
+  # ── Sync config + certs to edge-2 (VIP owner only) ──
+  # Uses haproxy-certs-send which handles allowlist enforcement, SSH transport,
+  # and syncs both certsync config files and PEM bundles to edge-2.
+  if "${need_haproxy}" && [[ -x /usr/local/sbin/haproxy-certs-send ]]; then
     local vip_ip="192.168.20.22"
-    local sync_key="/home/certsync/.ssh/id_ed25519"
     if ip -4 -o addr show | awk '{print $4}' | grep -Eq "${vip_ip}(/|$)"; then
-      if [[ -r "${sync_key}" ]]; then
-        log "VIP owner — syncing certsync config to peer"
-        local ssh_opts="-T -i ${sync_key} -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5"
-        rsync -rtvz --chmod=F640,D750 \
-          -e "ssh ${ssh_opts}" \
-          /etc/haproxy/certsync/allowlist.txt /etc/haproxy/certsync/crt-list.txt \
-          "certsync@edge-2.home.arpa:/etc/haproxy/certsync/" 2>&1 | while read -r line; do
-            log "rsync: ${line}"
-          done || warn "certsync config sync failed (PEMs will sync on next ACME run)"
-      else
-        log "VIP owner — certsync key not available, config will sync on next ACME run"
-      fi
+      log "VIP owner — syncing to peer via haproxy-certs-send"
+      /usr/local/sbin/haproxy-certs-send || warn "certsync send failed (peer will pick up on next ACME run)"
     fi
   fi
 
