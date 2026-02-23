@@ -83,6 +83,7 @@ compares the HEAD commit against the last-deployed commit, and deploys only
 changed files with correct ownership and permissions.
 
 **How it works:**
+
 ```
 edge-gitops-sync.timer (every 5 min)
   → edge-gitops-sync.sh
@@ -96,6 +97,7 @@ edge-gitops-sync.timer (every 5 min)
 ```
 
 **Initial bootstrap (one-time per node, as root):**
+
 ```bash
 # 1. Clone with sparse checkout (only infrastructure/edge/)
 git clone --depth 1 --filter=blob:none --sparse \
@@ -122,6 +124,7 @@ within 5 minutes. The script is self-updating — it deploys its own script and
 systemd units from the repo.
 
 **Manual trigger (after pushing an urgent change):**
+
 ```bash
 sudo systemctl start edge-gitops-sync.service
 journalctl -u edge-gitops-sync.service -n 20 --no-pager

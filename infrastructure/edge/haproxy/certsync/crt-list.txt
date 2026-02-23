@@ -1,10 +1,15 @@
 # =============================================================================
 # HAProxy crt-list — SNI-based certificate selection
 #
+# AUTO-GENERATED at runtime by vault-acme-issue-all.sh — DO NOT EDIT MANUALLY.
+# Add new domains to the domains array in vault-acme-issue-all.sh.
+#
+# This repo copy is a seed template for initial bootstrap only.
+# The runtime version on edge nodes is regenerated on every ACME run.
+#
 # Format: <PEM path> [SNI filter]
 # SNI filters restrict each cert to its exact hostname, preventing HAProxy
-# from serving the wrong cert if SNI doesn't match. Without filters, HAProxy
-# may return any loaded cert as a fallback.
+# from serving the wrong cert if SNI doesn't match.
 #
 # The vault.home.arpa.pem is loaded as the default cert on the bind line
 # in haproxy.cfg, so it does NOT need to appear here.

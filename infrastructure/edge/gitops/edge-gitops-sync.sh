@@ -164,10 +164,32 @@ deploy_file() {
 # Service reload helpers
 # =============================================================================
 reload_haproxy() {
+  # Pre-flight: check all PEMs referenced in crt-list actually exist
+  local crt_list="/etc/haproxy/certsync/crt-list.txt"
+  if [[ -f "${crt_list}" ]]; then
+    local missing=0
+    while IFS= read -r line; do
+      [[ "${line}" =~ ^#.*$ || -z "${line}" ]] && continue
+      local pem_path
+      pem_path="$(echo "${line}" | awk '{print $1}')"
+      if [[ ! -f "${pem_path}" ]]; then
+        warn "Missing PEM: ${pem_path} — run vault-acme-issue-all.sh to issue"
+        missing=$((missing + 1))
+      fi
+    done < "${crt_list}"
+    if [[ "${missing}" -gt 0 ]]; then
+      warn "${missing} PEM(s) missing — skipping HAProxy reload (run: sudo /usr/local/sbin/vault-acme-issue-all.sh)"
+      return 1
+    fi
+  fi
+
   log "Validating HAProxy config..."
   if /usr/sbin/haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1; then
     log "HAProxy config valid — reloading"
-    systemctl reload haproxy
+    systemctl reload haproxy || {
+      log "Reload failed — attempting restart for new crt-list entries"
+      systemctl restart haproxy
+    }
   else
     warn "HAProxy config INVALID — skipping reload (manual fix required)"
     /usr/sbin/haproxy -c -f /etc/haproxy/haproxy.cfg 2>&1 | while read -r line; do
@@ -248,11 +270,26 @@ main() {
   fi
 
   # ── Sync certsync config to edge-2 (VIP owner only) ──
-  if "${need_haproxy}" && [[ -x /usr/local/sbin/haproxy-certs-send ]]; then
+  # NOTE: haproxy-certs-send requires the certsync SSH key. Since gitops
+  # runs as root, we use rsync directly with the certsync user's key.
+  # PEM bundles are NOT synced here (only config files: crt-list + allowlist).
+  # Full PEM sync happens via vault-acme-issue-all.service ExecStartPost.
+  if "${need_haproxy}"; then
     local vip_ip="192.168.20.22"
+    local sync_key="/home/certsync/.ssh/id_ed25519"
     if ip -4 -o addr show | awk '{print $4}' | grep -Eq "${vip_ip}(/|$)"; then
-      log "VIP owner — syncing certsync config to peer"
-      /usr/local/sbin/haproxy-certs-send || warn "certsync send failed"
+      if [[ -r "${sync_key}" ]]; then
+        log "VIP owner — syncing certsync config to peer"
+        local ssh_opts="-T -i ${sync_key} -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5"
+        rsync -rtvz --chmod=F640,D750 \
+          -e "ssh ${ssh_opts}" \
+          /etc/haproxy/certsync/allowlist.txt /etc/haproxy/certsync/crt-list.txt \
+          "certsync@edge-2.home.arpa:/etc/haproxy/certsync/" 2>&1 | while read -r line; do
+            log "rsync: ${line}"
+          done || warn "certsync config sync failed (PEMs will sync on next ACME run)"
+      else
+        log "VIP owner — certsync key not available, config will sync on next ACME run"
+      fi
     fi
   fi
 
