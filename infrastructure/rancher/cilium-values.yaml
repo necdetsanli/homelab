@@ -109,6 +109,15 @@ gatewayAPI:
   enableAlpn: true
   enableAppProtocol: true
   xffNumTrustedHops: 1
+  # Secret syncing: cert-manager/VSO create TLS Secrets in app namespaces
+  # (e.g. gateway-system). Cilium operator clones them into cilium-secrets
+  # where embedded Envoy reads them via SDS (Secret Discovery Service).
+  # Default true in 1.19+ but explicit for IaC correctness and upgrade safety.
+  # Required when Gateway has TLS listeners (SSL re-encryption or mTLS).
+  secretsNamespace:
+    create: true
+    name: cilium-secrets
+    sync: true
 
 # CiliumEnvoyConfig CRD support for advanced Envoy configuration
 # beyond Gateway API resources (custom filters, rate limits, retries).
