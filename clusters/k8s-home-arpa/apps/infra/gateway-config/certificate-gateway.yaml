@@ -14,6 +14,7 @@ spec:
   issuerRef:
     name: vault-pki
     kind: ClusterIssuer
+  commonName: longhorn.mgmt.home.arpa
   dnsNames:
     - "longhorn.mgmt.home.arpa"
     # Add future Gateway-routed hostnames here:
