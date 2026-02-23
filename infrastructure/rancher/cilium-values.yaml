@@ -56,6 +56,9 @@ cluster:
 bpf:
   masquerade: true
   tproxy: true
+  hostLegacyRouting: false    # Use eBPF host routing instead of iptables.
+                              # Required for bandwidthManager.bbr.
+                              # RKE2 defaults this to true for compat — override.
 
 # ─── Socket-Level Load Balancing ─────────────────────────────────────────────
 # Intercepts at the connect() syscall, bypassing full per-packet processing

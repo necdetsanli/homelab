@@ -33,6 +33,7 @@ spec:
     bpf:
       masquerade: true
       tproxy: true
+      hostLegacyRouting: false    # BPF host routing (required for BBR)
 
     # Socket-Level LB
     socketLB:
