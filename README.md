@@ -97,6 +97,6 @@ Zero-trust model — every namespace starts with `default-deny-ingress`, then ex
 
 ## Diagrams
 
-All architecture diagrams live under `diagrams/`.
+All architecture diagrams live under `architecture/diagrams/`.
 
 > Note: A Draw.io diagram will be added first, but it is currently **outdated** and will be updated as the architecture evolves.
