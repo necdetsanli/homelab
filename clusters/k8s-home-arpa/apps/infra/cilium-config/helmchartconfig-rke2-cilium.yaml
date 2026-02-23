@@ -15,6 +15,35 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
+    # Transparent Encryption (WireGuard)
+    encryption:
+      enabled: true
+      type: wireguard
+      nodeEncryption: true
+      wireguard:
+        userspaceFallback: false
+
+    # Mutual Authentication (SPIRE)
+    authentication:
+      enabled: true
+      mutual:
+        spire:
+          enabled: true
+          trustDomain: spire.cilium
+          install:
+            enabled: true
+            namespace: cilium-spire
+            existingNamespace: true
+            server:
+              replicas: 1
+              dataStorage:
+                enabled: true
+                storageClass: longhorn
+                accessMode: ReadWriteOnce
+                size: 1Gi
+            agent:
+              skipKubeletVerification: true
+
     # Core Networking
     routingMode: native
     ipv4NativeRoutingCIDR: "10.42.0.0/16"

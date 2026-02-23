@@ -36,6 +36,35 @@ spec:
     # These overrides are applied to the rke2-cilium HelmChart by Rancher.
     chartValues:
       rke2-cilium:
+        # Transparent Encryption (WireGuard)
+        encryption:
+          enabled: true
+          type: wireguard
+          nodeEncryption: true
+          wireguard:
+            userspaceFallback: false
+
+        # Mutual Authentication (SPIRE)
+        authentication:
+          enabled: true
+          mutual:
+            spire:
+              enabled: true
+              trustDomain: spire.cilium
+              install:
+                enabled: true
+                namespace: cilium-spire
+                existingNamespace: true
+                server:
+                  replicas: 1
+                  dataStorage:
+                    enabled: true
+                    storageClass: longhorn
+                    accessMode: ReadWriteOnce
+                    size: 1Gi
+                agent:
+                  skipKubeletVerification: true
+
         # Core Networking
         routingMode: native
         ipv4NativeRoutingCIDR: "10.42.0.0/16"
@@ -54,6 +83,7 @@ spec:
         bpf:
           masquerade: true
           tproxy: true
+          hostLegacyRouting: false   # BPF host routing (required for BBR + WireGuard)
 
         # Socket-Level LB (connect() syscall interception)
         socketLB:

@@ -5,3 +5,4 @@ resources:
   - allow-webhooks.yaml
   - allow-gateway-ingress.yaml
   - allow-kube-system.yaml
+  - allow-spire.yaml

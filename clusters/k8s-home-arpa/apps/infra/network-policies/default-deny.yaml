@@ -90,3 +90,17 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+---
+# cilium-spire: SPIRE server + agent for mutual TLS identity.
+# Allow rules must permit SPIRE agent → server gRPC (port 8081).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: cilium-spire
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

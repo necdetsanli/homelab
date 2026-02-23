@@ -27,6 +27,80 @@
 #   - Gateway / HTTPRoute          → clusters/.../gateway-config/
 # =============================================================================
 
+# ─── Transparent Encryption (WireGuard) ───────────────────────────────────────
+# All inter-node pod traffic is encrypted at the kernel level via WireGuard.
+# Zero-config: Cilium auto-negotiates keys between nodes, no PSK or cert
+# management required. Operates at L3 — transparent to all L4–L7 above.
+#
+# nodeEncryption: also encrypts node-to-node host-networking pod traffic
+#                 (kubelet probes, metrics scraping, etc.)
+# userspaceFallback: disabled — kernel WireGuard (5.6+) is available
+#                    on RKE2 v1.34 (kernel 6.x).
+#
+# Compatible with: native routing ✓, BBR ✓, eBPF host routing ✓,
+#                  kubeProxyReplacement ✓, Gateway API ✓
+#
+# NOTE: strictMode can be enabled AFTER verifying WireGuard tunnels are
+# healthy on all nodes (cilium encrypt status). When enabled, unencrypted
+# inter-node traffic is DROPPED rather than forwarded in cleartext.
+encryption:
+  enabled: true
+  type: wireguard
+  nodeEncryption: true
+  wireguard:
+    userspaceFallback: false
+  # strictMode:
+  #   enabled: true              # Drop unencrypted inter-node traffic
+  #   cidr: ""                   # Protect all CIDRs
+  #   allowRemoteNodeIdentities: false
+
+# ─── Mutual Authentication (SPIRE) ───────────────────────────────────────────
+# Cryptographic workload identity verification via SPIFFE/SPIRE.
+# Provides per-pod X.509 SVIDs (SPIFFE Verifiable Identity Documents)
+# issued by a local SPIRE server. Cilium verifies SVIDs on connections
+# where CiliumNetworkPolicy specifies `authentication.mode: required`.
+#
+# Architecture:
+#   SPIRE Server (StatefulSet)  → issues SVIDs, stores registration entries
+#   SPIRE Agent  (DaemonSet)    → workload attestation, SVID delivery to Cilium
+#   Cilium Agent                → consumes SVIDs via Unix socket, enforces auth
+#
+# Cilium's SPIRE sub-chart handles full deployment into cilium-spire namespace.
+# The namespace must be pre-created with PSA privileged labels (SPIRE agent
+# requires hostPath volumes for the agent socket).
+#
+# Enforcement is opt-in: authentication only required when a CiliumNetworkPolicy
+# ingress/egress rule includes `authentication.mode: required`. Without it,
+# SVIDs are still issued but connections proceed without verification.
+#
+# To enforce, add to existing CiliumNetworkPolicy fromEndpoints rules:
+#   ingress:
+#     - fromEndpoints: [...]
+#       authentication:
+#         mode: "required"
+#
+# Hubble dropEventEmitter already watches `auth_required` — failed auth
+# attempts surface immediately in `kubectl get events` and Hubble flows.
+authentication:
+  enabled: true
+  mutual:
+    spire:
+      enabled: true
+      trustDomain: spire.cilium
+      install:
+        enabled: true
+        namespace: cilium-spire
+        existingNamespace: true
+        server:
+          replicas: 1
+          dataStorage:
+            enabled: true
+            storageClass: longhorn
+            accessMode: ReadWriteOnce
+            size: 1Gi
+        agent:
+          skipKubeletVerification: true
+
 # ─── Core Networking ──────────────────────────────────────────────────────────
 # Native routing with direct node routes eliminates VXLAN overlay entirely.
 # Combined with eBPF masquerade and tproxy, this creates a fully eBPF datapath
