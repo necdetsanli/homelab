@@ -1,0 +1,35 @@
+# Network policies — deployed as a DEDICATED Application (not inline via root).
+#
+# Security policies deserve their own Application for:
+# - Independent sync/health visibility in ArgoCD UI
+# - Audit trail separation (security changes tracked independently)
+# - No boot-ordering dependency on the bootstrap project's namespace whitelist
+# - Managed under the platform project, which allows all target namespaces
+#
+# sync-wave -1: policies deploy BEFORE workload Applications (wave 1+),
+# ensuring deny-by-default is in place before any pod starts.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: network-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://github.com/necdetsanli/homelab.git"
+    targetRevision: "main"
+    path: clusters/k8s-home-arpa/apps/infra/network-policies
+  destination:
+    server: "https://kubernetes.default.svc"
+    # No single namespace — resources specify their own via metadata.namespace
+    # ArgoCD with ServerSideApply respects per-resource namespace
+    namespace: "argocd"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

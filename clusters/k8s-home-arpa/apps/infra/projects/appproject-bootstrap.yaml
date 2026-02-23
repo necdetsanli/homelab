@@ -22,8 +22,6 @@ spec:
     - server: "https://kubernetes.default.svc"
       namespace: "cert-manager"
     - server: "https://kubernetes.default.svc"
-      namespace: "istio-system"
-    - server: "https://kubernetes.default.svc"
       namespace: "monitoring"
     - server: "https://kubernetes.default.svc"
       namespace: "logging"
@@ -33,6 +31,8 @@ spec:
       namespace: "longhorn-system"
     - server: "https://kubernetes.default.svc"
       namespace: "gateway-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "kube-system"
 
   clusterResourceWhitelist:
     - group: ""

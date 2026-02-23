@@ -3,12 +3,9 @@ kind: Kustomization
 resources:
   # sync-wave -2: namespaces first
   - ../namespaces
-  # sync-wave -1: projects + network-policies before apps
+  # sync-wave -1: projects before apps
   - ../projects
-  - ../network-policies
   # sync-wave 0: ArgoCD config
   - ../config
   # sync-wave 1: platform Applications (includes cilium-lb, gateway-config at sync-wave 2)
   - ../applications
-  # Phase 3: add ingress-nginx to applications/kustomization.yaml
-  # Phase 4: add istio to applications/kustomization.yaml
