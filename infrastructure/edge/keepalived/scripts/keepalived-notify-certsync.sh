@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Keepalived notify script — certificate sync trigger on VIP transition
+# Keepalived notify script — cert sync + audit on VIP transition
 #
-# Called by Keepalived when VRRP state changes. When this node becomes MASTER,
-# touches a trigger file. The actual cert sync is handled by:
-#   - vault-acme-issue-all.timer (daily issuance + sync)
-#   - haproxy-certs-send (rsync to peer)
+# Called by Keepalived when VRRP state changes. When this node becomes MASTER:
+#   1. Records transition timestamp (audit trail)
+#   2. Syncs certs + certsync config to the demoted peer via haproxy-certs-send
+#
+# This ensures the peer stays current even after a failover. The sync is
+# non-blocking (backgrounded) and failures are logged but not fatal.
 #
 # Deployed to: /usr/local/sbin/keepalived-notify-certsync.sh
 # Referenced in: keepalived.conf → vrrp_instance → notify_master
@@ -19,8 +21,19 @@ PRIO="${4:-}"
 
 logger -t keepalived-notify "event type=${TYPE} name=${NAME} state=${STATE} prio=${PRIO}"
 
-# When becoming MASTER, touch trigger file for observability / auditing
 if [[ "${STATE}" == "MASTER" ]]; then
-  logger -t keepalived-notify "STATE=MASTER -> touching trigger file"
+  # Audit trail
+  install -d -m 0750 /var/lib/keepalived
   date -Is > /var/lib/keepalived/certsync.master
+
+  # Give VIP a moment to settle before running rsync
+  sleep 3
+
+  # Sync certs + config to peer (non-blocking, failures are non-fatal)
+  if [[ -x /usr/local/sbin/haproxy-certs-send ]]; then
+    logger -t keepalived-notify "STATE=MASTER -> syncing certs to peer"
+    /usr/local/sbin/haproxy-certs-send 2>&1 | logger -t keepalived-certsync &
+  else
+    logger -t keepalived-notify "haproxy-certs-send not found — skipping cert sync"
+  fi
 fi

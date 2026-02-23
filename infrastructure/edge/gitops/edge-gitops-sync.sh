@@ -54,14 +54,11 @@ fail() { logger -t "${LOG_TAG}" -p user.err "$*"; echo "ERROR: $*" >&2; exit 1; 
 read_manifest() {
   cat <<'MANIFEST'
 haproxy/haproxy.cfg|/etc/haproxy/haproxy.cfg|root:haproxy|0640|haproxy
-haproxy/certsync/crt-list.txt|/etc/haproxy/certsync/crt-list.txt|root:haproxy|0640|haproxy
-haproxy/certsync/allowlist.txt|/etc/haproxy/certsync/allowlist.txt|root:haproxy|0640|haproxy
 scripts/vault-acme-issue-all.sh|/usr/local/sbin/vault-acme-issue-all.sh|root:root|0750|none
 scripts/haproxy-certs-send|/usr/local/sbin/haproxy-certs-send|root:root|0750|none
 scripts/haproxy-certs-recv|/usr/local/sbin/haproxy-certs-recv|root:root|0750|none
 certbot/dns01/auth.sh|/usr/local/lib/certbot-dns01/auth.sh|root:root|0750|none
 certbot/dns01/cleanup.sh|/usr/local/lib/certbot-dns01/cleanup.sh|root:root|0750|none
-certbot/hooks/deploy/50-haproxy-deploy|/etc/letsencrypt/renewal-hooks/deploy/50-haproxy-deploy|root:root|0750|none
 certbot/systemd/vault-acme-issue-all.timer|/etc/systemd/system/vault-acme-issue-all.timer|root:root|0644|systemd
 certbot/systemd/vault-acme-issue-all.service|/etc/systemd/system/vault-acme-issue-all.service|root:root|0644|systemd
 certbot/systemd/vault-acme-issue-all.service.d/20-certsync.conf|/etc/systemd/system/vault-acme-issue-all.service.d/20-certsync.conf|root:root|0644|systemd

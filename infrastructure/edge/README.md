@@ -35,20 +35,20 @@ Internal VLAN clients / WireGuard peers
 
 ## Components
 
-| Component        | Version  | Purpose                                                               |
-| ---------------- | -------- | --------------------------------------------------------------------- |
-| HAProxy          | 2.8 LTS  | TLS termination, SNI routing, health checks, TLS re-encryption       |
-| Keepalived       | 2.x      | VRRP failover, VIP management, certsync trigger on transition        |
-| certbot          | latest   | ACME client for Vault PKI DNS-01 cert issuance                       |
-| edge-gitops-sync | —        | Pull-based GitOps config deployment from GitHub (5-min poll)         |
+| Component        | Version | Purpose                                                        |
+| ---------------- | ------- | -------------------------------------------------------------- |
+| HAProxy          | 2.8 LTS | TLS termination, SNI routing, health checks, TLS re-encryption |
+| Keepalived       | 2.x     | VRRP failover, VIP management, certsync trigger on transition  |
+| certbot          | latest  | ACME client for Vault PKI DNS-01 cert issuance                 |
+| edge-gitops-sync | —       | Pull-based GitOps config deployment from GitHub (5-min poll)   |
 
 ## DNS Zones
 
-| Zone               | Access                               | Examples                                     |
-| ------------------ | ------------------------------------ | -------------------------------------------- |
-| `*.app.home.arpa`  | All VLANs                            | `nextcloud.app.home.arpa`                    |
-| `*.mgmt.home.arpa` | WireGuard only (`10.66.66.2/32`)     | `opnsense.mgmt.home.arpa`, `hubble.mgmt.home.arpa` |
-| `vault.home.arpa`  | Mgmt + Client VLANs + K8s pod CIDR  | Vault API (active-node routing)              |
+| Zone               | Access                             | Examples                                           |
+| ------------------ | ---------------------------------- | -------------------------------------------------- |
+| `*.app.home.arpa`  | All VLANs                          | `nextcloud.app.home.arpa`                          |
+| `*.mgmt.home.arpa` | WireGuard only (`10.66.66.2/32`)   | `opnsense.mgmt.home.arpa`, `hubble.mgmt.home.arpa` |
+| `vault.home.arpa`  | Mgmt + Client VLANs + K8s pod CIDR | Vault API (active-node routing)                    |
 
 ## File Layout
 
@@ -58,20 +58,20 @@ infrastructure/edge/
 ├── haproxy/
 │   ├── haproxy.cfg                             # Shared config (identical on both nodes)
 │   └── certsync/
-│       ├── crt-list.txt                        # Seed template (auto-generated at runtime)
-│       └── allowlist.txt                       # Seed template (auto-generated at runtime)
+│       ├── crt-list.txt                        # Reference only (auto-generated at runtime by cert orchestrator)
+│       └── allowlist.txt                       # Reference only (auto-generated at runtime by cert orchestrator)
 ├── keepalived/
 │   ├── edge-1-keepalived.conf                  # MASTER  priority 120
 │   ├── edge-2-keepalived.conf                  # BACKUP  priority 110
 │   └── scripts/
-│       └── keepalived-notify-certsync.sh       # VIP transition → cert sync trigger
+│       └── keepalived-notify-certsync.sh       # VIP transition → cert sync + audit
 ├── certbot/
 │   ├── dns01/
 │   │   ├── auth.sh                             # DNS-01 auth hook (nsupdate / GSS-TSIG)
 │   │   └── cleanup.sh                          # DNS-01 cleanup hook (delete TXT record)
 │   ├── hooks/
 │   │   └── deploy/
-│   │       └── 50-haproxy-deploy               # Renewal hook: PEM assembly + reload
+│   │       └── 50-haproxy-deploy               # DEPRECATED: superseded by vault-acme-issue-all.sh
 │   └── systemd/
 │       ├── vault-acme-issue-all.timer          # Daily renewal timer (03:17 + 1h jitter)
 │       ├── vault-acme-issue-all.service        # One-shot: runs the cert orchestrator
@@ -110,32 +110,36 @@ edge-gitops-sync.timer (every 5 min, OnBootSec=60s)
 ```
 
 **Key properties:**
+
 - **Self-updating**: the sync script + its own systemd units are in the manifest
 - **Idempotent**: skips files where destination content is identical
 - **Safe**: pre-flight PEM check prevents HAProxy from failing on missing certs
 - **Concurrency-safe**: `flock` prevents overlapping runs during fast git pushes
 
-**File manifest** (16 shared entries + 1 per-hostname keepalived config):
+**File manifest** (13 shared entries + 1 per-hostname keepalived config):
 
-| Source (repo)                                         | Destination (system)                                     | Service tag |
-| ----------------------------------------------------- | -------------------------------------------------------- | ----------- |
-| `haproxy/haproxy.cfg`                                  | `/etc/haproxy/haproxy.cfg`                               | haproxy     |
-| `haproxy/certsync/crt-list.txt`                        | `/etc/haproxy/certsync/crt-list.txt`                     | haproxy     |
-| `haproxy/certsync/allowlist.txt`                       | `/etc/haproxy/certsync/allowlist.txt`                     | haproxy     |
-| `scripts/vault-acme-issue-all.sh`                      | `/usr/local/sbin/vault-acme-issue-all.sh`                | none        |
-| `scripts/haproxy-certs-send`                           | `/usr/local/sbin/haproxy-certs-send`                     | none        |
-| `scripts/haproxy-certs-recv`                           | `/usr/local/sbin/haproxy-certs-recv`                     | none        |
-| `certbot/dns01/auth.sh`                               | `/usr/local/lib/certbot-dns01/auth.sh`                   | none        |
-| `certbot/dns01/cleanup.sh`                             | `/usr/local/lib/certbot-dns01/cleanup.sh`                | none        |
-| `certbot/hooks/deploy/50-haproxy-deploy`               | `/etc/letsencrypt/renewal-hooks/deploy/50-haproxy-deploy`| none        |
-| `certbot/systemd/vault-acme-issue-all.timer`           | `/etc/systemd/system/vault-acme-issue-all.timer`         | systemd     |
-| `certbot/systemd/vault-acme-issue-all.service`         | `/etc/systemd/system/vault-acme-issue-all.service`       | systemd     |
-| `certbot/systemd/…/20-certsync.conf`                  | `/etc/systemd/system/…/20-certsync.conf`                 | systemd     |
-| `keepalived/scripts/keepalived-notify-certsync.sh`     | `/usr/local/sbin/keepalived-notify-certsync.sh`          | none        |
-| `keepalived/{HOSTNAME}-keepalived.conf`                | `/etc/keepalived/keepalived.conf`                        | keepalived  |
-| `gitops/edge-gitops-sync.sh`                           | `/usr/local/sbin/edge-gitops-sync.sh`                    | gitops      |
-| `gitops/edge-gitops-sync.service`                      | `/etc/systemd/system/edge-gitops-sync.service`           | systemd     |
-| `gitops/edge-gitops-sync.timer`                        | `/etc/systemd/system/edge-gitops-sync.timer`             | systemd     |
+| Source (repo)                                      | Destination (system)                               | Service tag |
+| -------------------------------------------------- | -------------------------------------------------- | ----------- |
+| `haproxy/haproxy.cfg`                              | `/etc/haproxy/haproxy.cfg`                         | haproxy     |
+| `scripts/vault-acme-issue-all.sh`                  | `/usr/local/sbin/vault-acme-issue-all.sh`          | none        |
+| `scripts/haproxy-certs-send`                       | `/usr/local/sbin/haproxy-certs-send`               | none        |
+| `scripts/haproxy-certs-recv`                       | `/usr/local/sbin/haproxy-certs-recv`               | none        |
+| `certbot/dns01/auth.sh`                            | `/usr/local/lib/certbot-dns01/auth.sh`             | none        |
+| `certbot/dns01/cleanup.sh`                         | `/usr/local/lib/certbot-dns01/cleanup.sh`          | none        |
+| `certbot/systemd/vault-acme-issue-all.timer`       | `/etc/systemd/system/vault-acme-issue-all.timer`   | systemd     |
+| `certbot/systemd/vault-acme-issue-all.service`     | `/etc/systemd/system/vault-acme-issue-all.service` | systemd     |
+| `certbot/systemd/…/20-certsync.conf`               | `/etc/systemd/system/…/20-certsync.conf`           | systemd     |
+| `keepalived/scripts/keepalived-notify-certsync.sh` | `/usr/local/sbin/keepalived-notify-certsync.sh`    | none        |
+| `keepalived/{HOSTNAME}-keepalived.conf`            | `/etc/keepalived/keepalived.conf`                  | keepalived  |
+| `gitops/edge-gitops-sync.sh`                       | `/usr/local/sbin/edge-gitops-sync.sh`              | gitops      |
+| `gitops/edge-gitops-sync.service`                  | `/etc/systemd/system/edge-gitops-sync.service`     | systemd     |
+| `gitops/edge-gitops-sync.timer`                    | `/etc/systemd/system/edge-gitops-sync.timer`       | systemd     |
+
+> **Note:** `crt-list.txt`, `allowlist.txt`, and `50-haproxy-deploy` are
+> **not** in the gitops manifest. `crt-list.txt` and `allowlist.txt` are
+> auto-generated at runtime by `vault-acme-issue-all.sh` (Phase 3) — the repo
+> copies exist as reference documentation only. `50-haproxy-deploy` is
+> deprecated (superseded by the orchestrator's `assemble_pem()`).
 
 **Initial bootstrap (one-time per node, as root):**
 
@@ -218,11 +222,11 @@ vault-acme-issue-all.timer (daily 03:17 UTC+3, ±1h jitter)
 
 Vault PKI roles enforce domain restrictions server-side:
 
-| Role                  | ACME Endpoint                          | Domains                |
-| --------------------- | -------------------------------------- | ---------------------- |
-| `edge-mgmt-frontend`  | `pki_int/roles/edge-mgmt-frontend/acme` | `*.mgmt.home.arpa`   |
-| `edge-app-frontend`   | `pki_int/roles/edge-app-frontend/acme`  | `*.app.home.arpa`    |
-| `home-arpa-fqdns`     | `pki_int/roles/home-arpa-fqdns/acme`    | `*.home.arpa`        |
+| Role                 | ACME Endpoint                           | Domains            |
+| -------------------- | --------------------------------------- | ------------------ |
+| `edge-mgmt-frontend` | `pki_int/roles/edge-mgmt-frontend/acme` | `*.mgmt.home.arpa` |
+| `edge-app-frontend`  | `pki_int/roles/edge-app-frontend/acme`  | `*.app.home.arpa`  |
+| `home-arpa-fqdns`    | `pki_int/roles/home-arpa-fqdns/acme`    | `*.home.arpa`      |
 
 ### CNAME Delegation Pattern
 
@@ -253,16 +257,23 @@ haproxy-certs-send (runs as ExecStartPost, or from gitops sync)
 ```
 
 Triggered by:
+
 1. **Daily cert run** — `ExecStartPost` in `20-certsync.conf`
 2. **Config change** — gitops sync detects HAProxy file changes + VIP owner
 3. **VIP failover** — `keepalived-notify-certsync.sh` on MASTER transition
 
 ### PEM Assembly
 
-certbot deploy hooks only fire on **renewal**, not initial issuance.
-`vault-acme-issue-all.sh` handles both cases by calling `assemble_pem()` after
-every `certbot certonly`, which idempotently builds `privkey.pem + fullchain.pem`
-→ `/etc/haproxy/certs/<domain>.pem`.
+`vault-acme-issue-all.sh` calls `assemble_pem()` after every `certbot certonly`,
+which idempotently builds `privkey.pem + fullchain.pem` →
+`/etc/haproxy/certs/<domain>.pem`. This handles both initial issuance and
+renewal.
+
+> **Note:** The legacy `50-haproxy-deploy` certbot deploy hook is deprecated.
+> certbot deploy hooks only fire on renewal (not initial issuance), and they
+> trigger per-domain HAProxy reloads during the cert run. The orchestrator's
+> `assemble_pem()` replaces both functions. Disable the hook on edge nodes:
+> `chmod -x /etc/letsencrypt/renewal-hooks/deploy/50-haproxy-deploy`
 
 ### DNS Resolution Chain (Important for Troubleshooting)
 
@@ -284,13 +295,13 @@ AdGuard must explicitly forward `acme.home.arpa` queries to FreeIPA
 
 ### Backend Types
 
-| Type              | TLS to Backend | CA Verification            | Examples                       |
-| ----------------- | -------------- | -------------------------- | ------------------------------ |
-| K8s Gateway API   | `ssl verify required` | `home-arpa-root-ca.crt` | Longhorn UI, Hubble UI         |
-| Vault cluster     | `ssl verify required` | `home-arpa-root-ca.crt` | vault.home.arpa (active-node)  |
-| ArgoCD            | `ssl verify none`     | —                        | argocd.mgmt.home.arpa          |
-| Appliances        | `ssl verify none`     | —                        | OPNsense, Proxmox, iLO, etc.  |
-| HTTP backends     | none                  | —                        | AdGuard, Maltrail, Netdata     |
+| Type            | TLS to Backend        | CA Verification         | Examples                      |
+| --------------- | --------------------- | ----------------------- | ----------------------------- |
+| K8s Gateway API | `ssl verify required` | `home-arpa-root-ca.crt` | Longhorn UI, Hubble UI        |
+| Vault cluster   | `ssl verify required` | `home-arpa-root-ca.crt` | vault.home.arpa (active-node) |
+| ArgoCD          | `ssl verify none`     | —                       | argocd.mgmt.home.arpa         |
+| Appliances      | `ssl verify none`     | —                       | OPNsense, Proxmox, iLO, etc.  |
+| HTTP backends   | none                  | —                       | AdGuard, Maltrail, Netdata    |
 
 K8s services route through **Cilium Gateway API** (Envoy) at `192.168.20.201:443`
 with full TLS re-encryption and Vault PKI CA verification (cert-manager
@@ -299,6 +310,7 @@ with full TLS re-encryption and Vault PKI CA verification (cert-manager
 ### Health Checks
 
 All backends have `option httpchk` with appropriate health endpoints:
+
 - Vault: `GET /v1/sys/health` (200 = active, 429 = standby → marked DOWN)
 - ArgoCD: `GET /healthz` (200)
 - Others: `GET /` (2xx/3xx)
@@ -307,8 +319,10 @@ All backends have `option httpchk` with appropriate health endpoints:
 
 - **Unicast VRRP** — no multicast dependency
 - **`preempt_delay 30`** — stable failback after recovery
-- **Notify script** — `keepalived-notify-certsync.sh` triggers cert sync on
-  MASTER transition so the new VIP owner has current certs
+- **Notify script** — `keepalived-notify-certsync.sh` on MASTER transition:
+  1. Records transition timestamp to `/var/lib/keepalived/certsync.master`
+  2. Waits 3s for VIP to settle
+  3. Runs `haproxy-certs-send` (backgrounded, non-fatal) to push certs + config to peer
 
 ## Security
 
