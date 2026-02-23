@@ -135,6 +135,9 @@ ansible/collections/ansible_collections/
 # Inventory with real hosts — commit templates only
 ansible/inventory/*
 !ansible/inventory/*.example
+infrastructure/ansible/inventory/*
+!infrastructure/ansible/inventory/*.example
+!infrastructure/ansible/inventory/.gitkeep
 
 # ------------------------------------------------------------------------------
 # Kubernetes / Helm build artifacts

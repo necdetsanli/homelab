@@ -47,16 +47,16 @@ Full kube-proxy replacement with native eBPF datapath:
 
 **SPIRE mutual authentication** — every workload receives a SPIFFE SVID (X.509 identity) from a dedicated SPIRE infrastructure (trust domain: `spire.cilium`):
 
-| Component | Scope | Details |
-|-----------|-------|---------|
-| SPIRE Server | 1 replica, StatefulSet | Longhorn 1Gi PV, `cilium-spire` namespace |
-| SPIRE Agent | DaemonSet (all 3 nodes) | Full tolerations including `etcd:NoExecute` |
-| Cilium Auth | `authentication.enabled: true` | Chart defaults to `false` — must be explicit |
+| Component    | Scope                          | Details                                      |
+| ------------ | ------------------------------ | -------------------------------------------- |
+| SPIRE Server | 1 replica, StatefulSet         | Longhorn 1Gi PV, `cilium-spire` namespace    |
+| SPIRE Agent  | DaemonSet (all 3 nodes)        | Full tolerations including `etcd:NoExecute`  |
+| Cilium Auth  | `authentication.enabled: true` | Chart defaults to `false` — must be explicit |
 
 Enforcement via `authentication.mode: required` on `CiliumNetworkPolicy` ingress rules:
 
-| Policy | Source → Destination |
-|--------|---------------------|
+| Policy               | Source → Destination                 |
+| -------------------- | ------------------------------------ |
 | `allow-hubble-relay` | hubble-ui → hubble-relay (port 4245) |
 
 > **Not eligible for mutual auth:** Policies using `fromEntities` (CoreDNS, metrics-server, webhooks, gateway ingress, SPIRE agent→server) — reserved identities don't carry SPIFFE SVIDs. SPIRE agents run `hostNetwork: true`, so they appear as `remote-node`/`host` entities. Longhorn `instance-manager` pods are ephemeral and don't register SVIDs quickly enough.
@@ -87,7 +87,7 @@ Zero-trust model — every namespace starts with `default-deny-ingress`, then ex
 
 ## Security & Observability
 
-- **SIEM:** Wazuh
+- **SIEM/XDR:** Wazuh
 - **Flow Observability:** Hubble (UI exposed via Gateway API + TLS)
 
 ## High Availability
