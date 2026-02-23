@@ -112,7 +112,7 @@ authentication:
               value: "true"
             - key: CriticalAddonsOnly
               operator: Exists
-            - effect: NoSchedule
+            - effect: NoExecute
               key: node-role.kubernetes.io/etcd
               operator: Exists
 
