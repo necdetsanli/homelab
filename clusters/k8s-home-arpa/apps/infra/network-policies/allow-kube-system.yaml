@@ -1,0 +1,86 @@
+# Allow policies for kube-system — the ONLY paths into this namespace.
+#
+# kube-system hosts cluster-critical infrastructure: CoreDNS, Hubble,
+# metrics-server. Cilium agent runs with hostNetwork=true and is NOT
+# affected by NetworkPolicy. These policies are the explicit ingress
+# whitelist applied after the default-deny-ingress NetworkPolicy.
+#
+# Pattern: one CiliumNetworkPolicy per service, minimal port surface,
+# identity-based source selectors (no CIDR guessing).
+---
+# ─── CoreDNS ────────────────────────────────────────────────────────────────
+# DNS is foundational infrastructure. ALL pods, nodes, and the API server
+# require name resolution. The security boundary here is port restriction
+# (53 only), not source restriction — denying DNS to any cluster source
+# breaks that source entirely.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-coredns
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  ingress:
+    - fromEntities:
+        - cluster
+        - host
+        - remote-node
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: TCP
+            - port: "53"
+              protocol: UDP
+            - port: "9153"
+              protocol: TCP
+---
+# ─── Hubble Relay ───────────────────────────────────────────────────────────
+# Relay aggregates per-node flow data from cilium-agent gRPC endpoints.
+# Only hubble-ui pods need inbound access to the relay API.
+# Cilium-agent → Relay is EGRESS from agent (hostNetwork, unaffected).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-hubble-relay
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: hubble-relay
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s-app: hubble-ui
+      toPorts:
+        - ports:
+            - port: "4245"
+              protocol: TCP
+---
+# ─── Metrics Server ────────────────────────────────────────────────────────
+# kube-apiserver queries metrics-server for resource metrics (kubectl top,
+# HPA, VPA). Only the API server identity needs access.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-metrics-server
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: metrics-server
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "4443"
+              protocol: TCP

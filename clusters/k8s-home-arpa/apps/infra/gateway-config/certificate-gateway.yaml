@@ -17,8 +17,7 @@ spec:
   commonName: longhorn.mgmt.home.arpa
   dnsNames:
     - "longhorn.mgmt.home.arpa"
-    # Add future Gateway-routed hostnames here:
-    # - "hubble.mgmt.home.arpa"
+    - "hubble.mgmt.home.arpa"
   duration: 720h      # 30 days
   renewBefore: 168h   # renew 7 days early
   privateKey:

@@ -4,5 +4,6 @@ resources:
   - certificate-gateway.yaml
   - gateway.yaml
   - httproute-longhorn.yaml
+  - httproute-hubble.yaml
   - referencegrant-longhorn.yaml
   - netpol-gateway.yaml

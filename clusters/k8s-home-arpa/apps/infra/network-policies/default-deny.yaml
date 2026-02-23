@@ -87,3 +87,18 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+---
+# kube-system: Cilium, CoreDNS, Hubble, metrics-server.
+# Critical namespace — allow policies MUST cover CoreDNS (port 53)
+# before this deny takes effect, or cluster DNS will break.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

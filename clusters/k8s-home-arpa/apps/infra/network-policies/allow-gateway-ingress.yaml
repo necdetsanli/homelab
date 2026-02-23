@@ -29,3 +29,24 @@ spec:
         - ports:
             - port: "8000"
               protocol: TCP
+---
+# Hubble UI: allow Gateway proxy to reach hubble-ui on port 8081
+# (Service port is 80, but target port is 8081 on the nginx frontend container)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-hubble-ui
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: hubble-ui
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
