@@ -65,14 +65,70 @@ infrastructure/edge/
 │       ├── vault-acme-issue-all.service     # One-shot certbot orchestrator
 │       └── vault-acme-issue-all.service.d/
 │           └── 20-certsync.conf             # Drop-in: rsync to edge-2
+├── gitops/
+│   ├── edge-gitops-sync.sh         # GitOps pull + deploy script
+│   ├── edge-gitops-sync.service    # systemd one-shot service
+│   └── edge-gitops-sync.timer      # 5-minute poll timer
 └── scripts/
     ├── vault-acme-issue-all.sh  # Main orchestrator (certbot per domain)
-    └── haproxy-certs-send       # rsync PEMs to edge-2 via certsync user
+    ├── haproxy-certs-send       # rsync PEMs to edge-2 via certsync user
+    └── haproxy-certs-recv       # rsync receiver on edge-2 (ForceCommand)
+```
+
+## GitOps Config Sync
+
+Edge node configs are automatically synced from this GitHub repo via
+`edge-gitops-sync.sh`. Each node independently pulls the repo every 5 minutes,
+compares the HEAD commit against the last-deployed commit, and deploys only
+changed files with correct ownership and permissions.
+
+**How it works:**
+```
+edge-gitops-sync.timer (every 5 min)
+  → edge-gitops-sync.sh
+    → git fetch --depth 1 origin main
+    → diff HEAD vs last-deployed commit
+    → deploy changed files to system paths (atomic mv)
+    → validate + reload HAProxy (if haproxy files changed)
+    → reload Keepalived (if keepalived.conf changed)
+    → daemon-reload (if systemd units changed)
+    → sync certsync config to edge-2 (VIP owner only)
+```
+
+**Initial bootstrap (one-time per node, as root):**
+```bash
+# 1. Clone with sparse checkout (only infrastructure/edge/)
+git clone --depth 1 --filter=blob:none --sparse \
+  git@github.com:necdetsanli/homelab.git /var/lib/edge-gitops/homelab
+cd /var/lib/edge-gitops/homelab
+git sparse-checkout set infrastructure/edge
+
+# 2. Install the sync script + systemd units
+cp infrastructure/edge/gitops/edge-gitops-sync.sh /usr/local/sbin/
+chmod 0750 /usr/local/sbin/edge-gitops-sync.sh
+cp infrastructure/edge/gitops/edge-gitops-sync.service /etc/systemd/system/
+cp infrastructure/edge/gitops/edge-gitops-sync.timer /etc/systemd/system/
+
+# 3. Enable and start
+systemctl daemon-reload
+systemctl enable --now edge-gitops-sync.timer
+
+# 4. Run first sync immediately
+systemctl start edge-gitops-sync.service
+```
+
+After bootstrap, all future config changes pushed to `main` are auto-deployed
+within 5 minutes. The script is self-updating — it deploys its own script and
+systemd units from the repo.
+
+**Manual trigger (after pushing an urgent change):**
+```bash
+sudo systemctl start edge-gitops-sync.service
+journalctl -u edge-gitops-sync.service -n 20 --no-pager
 ```
 
 ## Deployment Notes
 
-- Configs are deployed via `scp` or Ansible (not managed by ArgoCD).
 - HAProxy loads all PEM certs from `/etc/haproxy/certs/` and a `crt-list.txt`
   synced by a Keepalived notify script (`keepalived-notify-certsync.sh`).
 - Keepalived uses unicast VRRP (no multicast dependency) with `preempt_delay 30`

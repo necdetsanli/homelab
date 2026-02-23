@@ -1,0 +1,18 @@
+# /etc/systemd/system/edge-gitops-sync.service
+# =============================================================================
+# One-shot: pull homelab repo and deploy changed edge configs.
+# Uses flock to prevent concurrent runs.
+# =============================================================================
+[Unit]
+Description=GitOps config sync for edge node (pull + deploy)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/edge-gitops-sync.lock /usr/local/sbin/edge-gitops-sync.sh
+
+# Security hardening
+ProtectHome=true
+NoNewPrivileges=false
+PrivateTmp=true
