@@ -14,9 +14,16 @@ spec:
   destination:
     server: "https://kubernetes.default.svc"
     namespace: "gateway-system"
+  ignoreDifferences:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      jqPathExpressions:
+        - .metadata.annotations
+        - .spec.infrastructure
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
