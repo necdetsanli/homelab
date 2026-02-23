@@ -1,5 +1,6 @@
 # Allow HAProxy (edge tier) to reach the Cilium Gateway proxy pods.
-# HAProxy forwards plain HTTP from the VIP (192.168.20.22) after TLS termination.
+# HAProxy re-encrypts to the Gateway's HTTPS listener (:443).
+# HTTP (:80) kept for health checks and future redirect.
 # The edge nodes are 192.168.20.20 and 192.168.20.21.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -17,4 +18,6 @@ spec:
       toPorts:
         - ports:
             - port: "80"
+              protocol: TCP
+            - port: "443"
               protocol: TCP

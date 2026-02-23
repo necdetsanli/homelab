@@ -1,0 +1,25 @@
+# Gateway TLS Certificate — issued by Vault PKI via cert-manager.
+# Uses the existing ClusterIssuer "vault-pki" (pki_int/sign/home-arpa-fqdns).
+# cert-manager creates Secret "gateway-tls" in gateway-system;
+# Cilium's secretsNamespace.sync copies it to cilium-secrets for Envoy.
+# Add all Gateway-routed hostnames to dnsNames as new HTTPRoutes are added.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gateway-tls
+  namespace: gateway-system
+spec:
+  secretName: gateway-tls
+  issuerRef:
+    name: vault-pki
+    kind: ClusterIssuer
+  dnsNames:
+    - "longhorn.mgmt.home.arpa"
+    # Add future Gateway-routed hostnames here:
+    # - "hubble.mgmt.home.arpa"
+  duration: 720h      # 30 days
+  renewBefore: 168h   # renew 7 days early
+  privateKey:
+    algorithm: ECDSA
+    size: 256

@@ -1,7 +1,7 @@
 # HTTPRoute: longhorn.mgmt.home.arpa -> longhorn-frontend in longhorn-system
-# HAProxy terminates TLS and enforces WireGuard-only ACL for *.mgmt.home.arpa,
-# then forwards plain HTTP to the Gateway VIP. This route matches by hostname
-# and forwards to the Longhorn UI service.
+# HAProxy terminates external TLS (Vault ACME cert) and re-encrypts to the
+# Gateway's HTTPS listener (Vault PKI cert via cert-manager). This route
+# matches by hostname and forwards to the Longhorn UI service.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -13,6 +13,7 @@ spec:
       kind: Gateway
       name: platform-gateway
       namespace: gateway-system
+      sectionName: https
   hostnames:
     - "longhorn.mgmt.home.arpa"
   rules:
