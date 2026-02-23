@@ -32,6 +32,8 @@ spec:
     - fromEndpoints:
         - matchLabels:
             app: spire-agent
+      authentication:
+        mode: "required"
       toPorts:
         - ports:
             - port: "8081"
