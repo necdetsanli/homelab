@@ -8,28 +8,6 @@
 # Port restrictions limit blast radius. TLS mutual authentication on
 # webhooks provides the authorization layer.
 ---
-# MetalLB controller webhook (port 9443)
-# Validates: IPAddressPool, L2Advertisement, BGPPeer, etc.
-# MetalLB uses bare "component: controller" labels (NOT app.kubernetes.io/)
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-apiserver-webhook
-  namespace: metallb-system
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  endpointSelector:
-    matchLabels:
-      component: controller
-  ingress:
-    - fromEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "9443"
-              protocol: TCP
----
 # cert-manager webhook (port 10250)
 # Validates: Certificate, Issuer, ClusterIssuer, etc.
 apiVersion: cilium.io/v2

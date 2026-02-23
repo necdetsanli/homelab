@@ -15,15 +15,12 @@ spec:
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
     - "https://charts.jetstack.io"                   # cert-manager
-    - "https://metallb.github.io/metallb"             # metallb
     - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
     - "https://charts.longhorn.io"                       # longhorn
 
   destinations:
     - server: "https://kubernetes.default.svc"
       namespace: "cert-manager"
-    - server: "https://kubernetes.default.svc"
-      namespace: "metallb-system"
     - server: "https://kubernetes.default.svc"
       namespace: "istio-system"
     - server: "https://kubernetes.default.svc"
@@ -82,6 +79,11 @@ spec:
       kind: "CiliumBGPAdvertisement"
     - group: "cilium.io"
       kind: "CiliumBGPNodeConfigOverride"
+    # Cilium LB-IPAM (cluster-scoped)
+    - group: "cilium.io"
+      kind: "CiliumLoadBalancerIPPool"
+    - group: "cilium.io"
+      kind: "CiliumL2AnnouncementPolicy"
     # VSO (Vault Secrets Operator) cluster-scoped CRDs
     - group: "secrets.hashicorp.com"
       kind: "VaultAuthGlobal"
@@ -141,15 +143,6 @@ spec:
       kind: "AppProject"
     - group: "argoproj.io"
       kind: "ApplicationSet"
-    # MetalLB configuration resources
-    - group: "metallb.io"
-      kind: "IPAddressPool"
-    - group: "metallb.io"
-      kind: "L2Advertisement"
-    - group: "metallb.io"
-      kind: "BGPPeer"
-    - group: "metallb.io"
-      kind: "BGPAdvertisement"
     # cert-manager namespaced resources
     - group: "cert-manager.io"
       kind: "Certificate"

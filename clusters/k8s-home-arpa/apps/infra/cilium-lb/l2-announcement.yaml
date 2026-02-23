@@ -1,0 +1,23 @@
+# Cilium L2 Announcement Policy — replaces MetalLB L2Advertisement
+# Cilium agents respond to ARP queries for all LoadBalancer VIPs.
+# Uses leaderElection to ensure exactly one node responds per VIP.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: homelab-l2
+spec:
+  # Announce from all nodes (any node can be the leader for a given VIP)
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux
+  # Match all LB services in the homelab-pool
+  serviceSelector:
+    matchExpressions:
+      - key: thisSelectorMatchesNothing
+        operator: DoesNotExist
+  interfaces:
+    - ^eth[0-9]+
+    - ^eno[0-9]+
+    - ^ens[0-9]+
+  externalIPs: true
+  loadBalancerIPs: true

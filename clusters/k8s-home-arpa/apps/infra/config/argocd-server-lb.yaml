@@ -1,5 +1,5 @@
 # ArgoCD Server LoadBalancer Service
-# Creates a MetalLB-backed entrypoint for ArgoCD UI/API.
+# Creates a Cilium LB-IPAM backed entrypoint for ArgoCD UI/API.
 # This is a SEPARATE Service from the Rancher-managed argocd-server
 # to avoid ownership conflicts.
 #
@@ -13,7 +13,7 @@ metadata:
   name: argocd-server-lb
   namespace: argocd
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.20.200"
+    lbipam.cilium.io/ips: "192.168.20.200"
 spec:
   type: LoadBalancer
   selector:

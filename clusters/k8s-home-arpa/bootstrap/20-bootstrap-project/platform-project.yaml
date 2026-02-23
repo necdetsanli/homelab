@@ -11,7 +11,6 @@ spec:
     - "https://github.com/necdetsanli/homelab.git"
     - "https://github.com/necdetsanli/homelab"
     - "https://charts.jetstack.io"                   # cert-manager
-    - "https://metallb.github.io/metallb"             # metallb
     - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
     - "https://charts.longhorn.io"                     # longhorn
 
@@ -21,8 +20,6 @@ spec:
       namespace: "argocd"
     - server: "https://kubernetes.default.svc"
       namespace: "cert-manager"
-    - server: "https://kubernetes.default.svc"
-      namespace: "metallb-system"
     - server: "https://kubernetes.default.svc"
       namespace: "istio-system"
     - server: "https://kubernetes.default.svc"

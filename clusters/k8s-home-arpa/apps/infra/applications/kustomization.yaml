@@ -3,9 +3,8 @@ kind: Kustomization
 resources:
   - application-cert-manager.yaml
   - application-cert-manager-config.yaml
-  - application-metallb.yaml
-  - application-metallb-config.yaml
   - application-cilium-bgp.yaml
+  - application-cilium-lb.yaml
   - application-vso.yaml
   - application-vso-config.yaml
   - application-longhorn.yaml

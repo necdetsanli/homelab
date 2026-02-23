@@ -1,6 +1,6 @@
 # CiliumBGPAdvertisement — what routes Cilium announces to OPNsense.
 #   PodCIDR:        Each node announces its 10.42.x.0/24 allocation
-#   LoadBalancerIP:  MetalLB VIPs (192.168.20.200-250) are announced
+#   LoadBalancerIP:  Cilium LB-IPAM VIPs (192.168.20.200-250) are announced
 #                    so OPNsense can route to them without ARP/L2
 ---
 apiVersion: cilium.io/v2alpha1

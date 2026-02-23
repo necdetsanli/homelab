@@ -1,4 +1,4 @@
-# Shared platform Gateway — single MetalLB VIP for all HTTP services.
+# Shared platform Gateway — single Cilium LB-IPAM VIP for all HTTP services.
 # HAProxy terminates external TLS, forwards plain HTTP to this Gateway.
 # Individual HTTPRoutes per service handle hostname-based routing.
 apiVersion: gateway.networking.k8s.io/v1
@@ -6,11 +6,12 @@ kind: Gateway
 metadata:
   name: platform-gateway
   namespace: gateway-system
-  annotations:
-    # Request a specific MetalLB IP from the existing pool (192.168.20.200-250)
-    metallb.io/loadbalancer-ips: "192.168.20.201"
 spec:
   gatewayClassName: cilium
+  # Static VIP from CiliumLoadBalancerIPPool (homelab-pool: 192.168.20.200-250)
+  addresses:
+    - type: IPAddress
+      value: "192.168.20.201"
   listeners:
     - name: http
       protocol: HTTP
