@@ -43,7 +43,7 @@ Full kube-proxy replacement with native eBPF datapath:
 
 ### Encryption & Mutual Authentication (Phase 2)
 
-**WireGuard transparent encryption** — all pod-to-pod traffic between nodes is encrypted at the kernel level. Control-plane node is opted out by default (host-network traffic already TLS-protected by Kubernetes).
+**WireGuard transparent encryption** — all pod-to-pod traffic between nodes is encrypted at the kernel level. Strict mode enabled: unencrypted inter-node pod traffic is **dropped** (no plaintext fallback). Control-plane node is opted out of NodeEncryption (host-network traffic already TLS-protected), with `allowRemoteNodeIdentities: true` to permit those flows.
 
 **SPIRE mutual authentication** — every workload receives a SPIFFE SVID (X.509 identity) from a dedicated SPIRE infrastructure (trust domain: `spire.cilium`):
 
@@ -58,10 +58,8 @@ Enforcement via `authentication.mode: required` on `CiliumNetworkPolicy` ingress
 | Policy | Source → Destination |
 |--------|---------------------|
 | `allow-hubble-relay` | hubble-ui → hubble-relay (port 4245) |
-| `allow-spire-agent-to-server` | spire-agent → spire-server (port 8081) |
-| `allow-longhorn-internal` | longhorn intra-namespace (all pods) |
 
-> Policies using `fromEntities` (CoreDNS, metrics-server, webhooks, gateway ingress) are **not eligible** — reserved identities don't carry SPIFFE SVIDs.
+> **Not eligible for mutual auth:** Policies using `fromEntities` (CoreDNS, metrics-server, webhooks, gateway ingress, SPIRE agent→server) — reserved identities don't carry SPIFFE SVIDs. SPIRE agents run `hostNetwork: true`, so they appear as `remote-node`/`host` entities. Longhorn `instance-manager` pods are ephemeral and don't register SVIDs quickly enough.
 
 ### TLS Re-encryption (Phase 1)
 
@@ -84,8 +82,8 @@ Zero-trust model — every namespace starts with `default-deny-ingress`, then ex
 - `allow-metrics-server` — kube-apiserver only
 - `allow-gateway-to-*` — Envoy ingress identity to backend services
 - `allow-apiserver-webhook` — webhook ports for cert-manager, Longhorn
-- `allow-spire-agent-to-server` — gRPC registration (mutual auth enforced)
-- `allow-longhorn-internal` — intra-namespace (mutual auth enforced)
+- `allow-spire-agent-to-server` — host/remote-node/kube-apiserver entities (hostNetwork agents)
+- `allow-longhorn-internal` — intra-namespace
 
 ## Security & Observability
 

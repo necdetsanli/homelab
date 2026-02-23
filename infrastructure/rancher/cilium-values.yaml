@@ -49,10 +49,10 @@ encryption:
   nodeEncryption: true
   wireguard:
     userspaceFallback: false
-  # strictMode:
-  #   enabled: true              # Drop unencrypted inter-node traffic
-  #   cidr: ""                   # Protect all CIDRs
-  #   allowRemoteNodeIdentities: false
+  strictMode:
+    enabled: true
+    cidr: ""                     # Auto-detect pod CIDR
+    allowRemoteNodeIdentities: true  # Required: master opts out of NodeEncryption
 
 # ─── Mutual Authentication (SPIRE) ───────────────────────────────────────────
 # Cryptographic workload identity verification via SPIFFE/SPIRE.

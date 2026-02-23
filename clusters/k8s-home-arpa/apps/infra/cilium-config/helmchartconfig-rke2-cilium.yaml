@@ -22,6 +22,10 @@ spec:
       nodeEncryption: true
       wireguard:
         userspaceFallback: false
+      strictMode:
+        enabled: true
+        cidr: ""
+        allowRemoteNodeIdentities: true
 
     # Mutual Authentication (SPIRE)
     authentication:

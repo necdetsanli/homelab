@@ -3,20 +3,25 @@
 # SPIRE provides cryptographic workload identity (SPIFFE SVIDs) for
 # Cilium's mutual authentication feature. The architecture is:
 #
-#   SPIRE Agent (DaemonSet) ──gRPC:8081──▶ SPIRE Server (StatefulSet)
+#   SPIRE Agent (DaemonSet, hostNetwork) ──gRPC:8081──▶ SPIRE Server (StatefulSet)
 #   Cilium Agent ──Unix socket──▶ SPIRE Agent (local node only)
 #
 # The Cilium ↔ SPIRE Agent path uses a hostPath Unix socket — no network
 # traffic, no policy needed. The only network flow requiring an allow rule
 # is Agent → Server for SVID issuance and workload registration.
 #
-# Labels used by Cilium's bundled SPIRE sub-chart:
-#   SPIRE Server: app=spire-server
-#   SPIRE Agent:  app=spire-agent
+# IMPORTANT: SPIRE agents run with hostNetwork=true (required for workload
+# attestation). Their traffic appears as reserved:host (local node) or
+# reserved:remote-node (from other nodes) — NOT as labeled endpoints.
+# Therefore we must use fromEntities, not fromEndpoints.
+#
+# kube-apiserver also reaches SPIRE server for health probes and webhook
+# validation, so it's included in the allowed entities.
 ---
 # SPIRE Agent → SPIRE Server gRPC API (port 8081)
 # Agents register workloads and fetch SVIDs from the server.
 # Each node's SPIRE agent maintains a persistent gRPC stream.
+# Also allows kube-apiserver for health probes / webhook calls.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -29,11 +34,10 @@ spec:
     matchLabels:
       app: spire-server
   ingress:
-    - fromEndpoints:
-        - matchLabels:
-            app: spire-agent
-      authentication:
-        mode: "required"
+    - fromEntities:
+        - host
+        - remote-node
+        - kube-apiserver
       toPorts:
         - ports:
             - port: "8081"

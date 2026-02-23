@@ -91,5 +91,3 @@ spec:
   ingress:
     - fromEndpoints:
         - {}
-      authentication:
-        mode: "required"
