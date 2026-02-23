@@ -36,6 +36,9 @@ spec:
     # cert-manager needs leader election Roles/RoleBindings in kube-system
     - server: "https://kubernetes.default.svc"
       namespace: "kube-system"
+    # SPIRE server + agent for Cilium mutual authentication
+    - server: "https://kubernetes.default.svc"
+      namespace: "cilium-spire"
 
   # Cluster-scoped resources: strict allow-list
   clusterResourceWhitelist:
