@@ -43,6 +43,10 @@ spec:
                 size: 1Gi
             agent:
               skipKubeletVerification: true
+              tolerations:
+                - effect: NoSchedule
+                  key: node-role.kubernetes.io/etcd
+                  operator: Exists
 
     # Core Networking
     routingMode: native

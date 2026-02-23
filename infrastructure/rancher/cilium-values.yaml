@@ -100,6 +100,10 @@ authentication:
             size: 1Gi
         agent:
           skipKubeletVerification: true
+          tolerations:
+            - effect: NoSchedule
+              key: node-role.kubernetes.io/etcd
+              operator: Exists
 
 # ─── Core Networking ──────────────────────────────────────────────────────────
 # Native routing with direct node routes eliminates VXLAN overlay entirely.
