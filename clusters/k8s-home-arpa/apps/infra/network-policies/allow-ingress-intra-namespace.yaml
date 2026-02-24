@@ -1,0 +1,187 @@
+# Allow ingress from pods within the same namespace.
+#
+# This is the ingress counterpart to the allow-egress-intra-namespace
+# rules in allow-egress-services.yaml.  Without these, the Kubernetes
+# default-deny NetworkPolicy blocks all ingress and pods (e.g.
+# argocd-application-controller → argocd-repo-server) cannot communicate
+# even though egress is permitted.
+#
+# Pattern: one CiliumNetworkPolicy per managed namespace, sync-wave -1.
+---
+# ── argocd ──────────────────────────────────────────────────────────────────
+# server ↔ redis, controller ↔ repo-server, applicationset ↔ server, etc.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── cert-manager ────────────────────────────────────────────────────────────
+# webhook ↔ controller, cainjector ↔ controller
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── security ────────────────────────────────────────────────────────────────
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: security
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── longhorn-system ─────────────────────────────────────────────────────────
+# manager ↔ instance-manager ↔ CSI plugin
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── kube-system ─────────────────────────────────────────────────────────────
+# CoreDNS ↔ CoreDNS, Hubble UI ↔ Hubble Relay, etc.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── cilium-spire ────────────────────────────────────────────────────────────
+# SPIRE agent ↔ SPIRE server
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: cilium-spire
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── gateway-system ──────────────────────────────────────────────────────────
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: gateway-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── monitoring ──────────────────────────────────────────────────────────────
+# Grafana ↔ Mimir, Zabbix components, etc.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── logging ─────────────────────────────────────────────────────────────────
+# Elasticsearch ↔ Kibana, Loki components
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── tracing ─────────────────────────────────────────────────────────────────
+# Tempo ↔ Jaeger
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── opentelemetry ───────────────────────────────────────────────────────────
+# OTel operator ↔ collector
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ── elastic-system ──────────────────────────────────────────────────────────
+# ECK operator internal communication
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: elastic-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}

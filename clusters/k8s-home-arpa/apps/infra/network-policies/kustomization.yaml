@@ -4,6 +4,7 @@ resources:
   - default-deny.yaml
   - allow-egress-core.yaml
   - allow-egress-services.yaml
+  - allow-ingress-intra-namespace.yaml
   - allow-webhooks.yaml
   - allow-gateway-ingress.yaml
   - allow-kube-system.yaml
