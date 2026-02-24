@@ -20,7 +20,7 @@ ConditionPathExists=/etc/vault-agent/role-id
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/vault agent -config=/etc/vault-agent/vault-agent.hcl
+ExecStart=/usr/bin/vault agent -config=/etc/vault-agent/vault-agent.hcl
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=10
