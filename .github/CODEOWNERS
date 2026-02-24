@@ -1,6 +1,6 @@
-# CODEOWNERS — require review before merge to main.
+# CODEOWNERS - require review before merge to main.
 #
-# Enable branch-protection rules in GitHub → Settings → Branches:
+# Enable branch-protection rules in GitHub > Settings > Branches:
 #   - Require pull request before merging (1 approval)
 #   - Require review from Code Owners
 #   - Require status checks: gitleaks
@@ -12,18 +12,18 @@
 # Default: repository owner reviews all changes
 *                                       @necdetsanli
 
-# Bootstrap — controls ArgoCD itself and cluster namespaces
+# Bootstrap - controls ArgoCD itself and cluster namespaces
 clusters/k8s-home-arpa/bootstrap/       @necdetsanli
 
 # Security-critical: network policies, projects, RBAC
-clusters/k8s-home-arpa/apps/infra/network-policies/  @necdetsanli
-clusters/k8s-home-arpa/apps/infra/projects/           @necdetsanli
-clusters/k8s-home-arpa/apps/infra/config/             @necdetsanli
+clusters/k8s-home-arpa/apps/infra/network-policies/ @necdetsanli
+clusters/k8s-home-arpa/apps/infra/projects/          @necdetsanli
+clusters/k8s-home-arpa/apps/infra/config/            @necdetsanli
 
-# Edge infrastructure — HAProxy, Keepalived, Vault Agent
+# Edge infrastructure - HAProxy, Keepalived, Vault Agent
 infrastructure/edge/                    @necdetsanli
 
-# Vendored manifests — version bumps need careful review
+# Vendored manifests - version bumps need careful review
 vendor/                                 @necdetsanli
 
 # CI/CD workflows

@@ -1,0 +1,34 @@
+# EditorConfig — https://editorconfig.org
+# Standardises encoding, indentation and line endings across editors.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# YAML / Kubernetes manifests
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
+
+# Shell scripts
+[*.{sh,bash}]
+indent_style = space
+indent_size = 4
+
+# HCL (Vault, Terraform)
+[*.{hcl,tf}]
+indent_style = space
+indent_size = 2
+
+# Markdown — trailing whitespace is significant (line breaks)
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefiles require tabs
+[Makefile]
+indent_style = tab
