@@ -17,7 +17,9 @@ metadata:
   labels:
     homelab.necdetsanli.io/tier: observability
     homelab.necdetsanli.io/gateway-access: "true"
-    pod-security.kubernetes.io/enforce: restricted
+    # Grafana init-chown-data (root, CHOWN cap), Mimir-minio, and Loki
+    # sidecar containers cannot satisfy restricted; baseline is sufficient.
+    pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
   annotations:
@@ -30,7 +32,9 @@ metadata:
   labels:
     homelab.necdetsanli.io/tier: observability
     homelab.necdetsanli.io/gateway-access: "true"
-    pod-security.kubernetes.io/enforce: restricted
+    # Loki-gateway (nginx) and Elasticsearch init containers need capabilities
+    # that restricted blocks; baseline is sufficient.
+    pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
   annotations:
@@ -98,7 +102,9 @@ metadata:
   labels:
     homelab.necdetsanli.io/tier: observability
     homelab.necdetsanli.io/gateway-access: "true"
-    pod-security.kubernetes.io/enforce: restricted
+    # Jaeger all-in-one container does not set runAsNonRoot or seccompProfile;
+    # baseline is sufficient.
+    pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
   annotations:
@@ -123,7 +129,9 @@ metadata:
   name: elastic-system
   labels:
     homelab.necdetsanli.io/tier: platform
-    pod-security.kubernetes.io/enforce: restricted
+    # ECK operator and Elasticsearch/Kibana init containers require
+    # capabilities that restricted blocks; baseline is sufficient.
+    pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
   annotations:
