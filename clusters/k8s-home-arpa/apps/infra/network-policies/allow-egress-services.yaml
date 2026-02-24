@@ -45,7 +45,7 @@ spec:
             - port: "443"
               protocol: TCP
 ---
-# Helm chart sources — cert-manager, Longhorn, HashiCorp, Gateway API
+# Helm chart sources — ArgoCD repo-server fetches Helm index + tarballs.
 # ArgoCD repo-server fetches Helm index + tarballs from these registries.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -60,9 +60,16 @@ spec:
       app.kubernetes.io/name: argocd-repo-server
   egress:
     - toFQDNs:
+        # Platform
         - matchName: "charts.jetstack.io"
         - matchName: "charts.longhorn.io"
         - matchName: "helm.releases.hashicorp.com"
+        # Observability
+        - matchName: "grafana.github.io"
+        - matchName: "zabbix-community.github.io"
+        - matchName: "helm.elastic.co"
+        - matchName: "open-telemetry.github.io"
+        - matchName: "jaegertracing.github.io"
       toPorts:
         - ports:
             - port: "443"
