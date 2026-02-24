@@ -9,6 +9,31 @@
 # minimal port surface, co-located in the central network-policies
 # directory for audit visibility.
 ---
+# ArgoCD UI: allow HAProxy edge nodes to reach argocd-server on port 8080.
+# ArgoCD uses a direct LoadBalancer (192.168.20.200) rather than the Gateway
+# API.  With externalTrafficPolicy: Cluster, Cilium DNAT preserves the
+# source IP of the HAProxy nodes.  Without this rule, default-deny drops
+# every health check and user request from HAProxy.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-haproxy-to-argocd
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  ingress:
+    - fromCIDR:
+        - 192.168.20.20/32
+        - 192.168.20.21/32
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
 # Longhorn UI: allow Gateway proxy to reach longhorn-frontend on port 8000
 # (Service port is 80, but target port is 8000 on the pod)
 apiVersion: cilium.io/v2
