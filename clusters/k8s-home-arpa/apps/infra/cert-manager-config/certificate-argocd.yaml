@@ -18,5 +18,5 @@ spec:
   duration: 720h    # 30 days (intermediate CA valid until 2031)
   renewBefore: 168h  # renew 7 days early
   privateKey:
-    algorithm: ECDSA
-    size: 256
+    algorithm: RSA
+    size: 4096
