@@ -1,0 +1,33 @@
+# Vault CA Bundle — deploys root CA Secret to cert-manager + security namespaces.
+# Single source of truth: vault-ca-bundle/root-ca.crt
+# Consumed by:
+#   - ClusterIssuer "vault-pki" (caBundleSecretRef in cert-manager NS)
+#   - VaultConnection "default" (caCertSecretRef in security NS)
+#
+# Sync wave 1: must exist before cert-manager-config and vso-config (wave 2).
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-ca-bundle
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://github.com/necdetsanli/homelab.git"
+    targetRevision: main
+    path: "clusters/k8s-home-arpa/apps/infra/vault-ca-bundle"
+  destination:
+    server: "https://kubernetes.default.svc"
+    # Namespace is set per-overlay (cert-manager + security) via kustomize.
+    # ArgoCD destination namespace is not used for generated resources.
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

@@ -1,0 +1,19 @@
+# Vault CA Bundle — Base Secret Template
+# Generates vault-ca-bundle Secret from the single-source root-ca.crt.
+# Consumed by namespace overlays (cert-manager/ and security/).
+#
+# CA rotation: update ONLY root-ca.crt, then commit.
+# Kustomize regenerates the Secret in all target namespaces.
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    app.kubernetes.io/component: vault-ca-bundle
+    app.kubernetes.io/managed-by: argocd
+secretGenerator:
+  - name: vault-ca-bundle
+    type: Opaque
+    files:
+      - ca.crt=../root-ca.crt

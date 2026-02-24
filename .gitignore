@@ -11,6 +11,9 @@
 # ------------------------------------------------------------------------------
 notes-and-plans/
 
+# Architecture diagrams (under review, will be unignored when ready)
+architecture/
+
 # ------------------------------------------------------------------------------
 # Secrets & credentials
 # ------------------------------------------------------------------------------
@@ -33,6 +36,7 @@ private/
 *.jks
 *.keystore
 *.crt
+!**/vault-ca-bundle/root-ca.crt
 *.csr
 *.der
 

@@ -1,0 +1,8 @@
+# Vault CA Bundle → cert-manager namespace
+# Required by ClusterIssuer "vault-pki" (caBundleSecretRef).
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cert-manager
+resources:
+  - ../base

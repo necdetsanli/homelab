@@ -5,6 +5,7 @@ resources:
   - application-cert-manager-config.yaml
   - application-cilium-bgp.yaml
   - application-cilium-lb.yaml
+  - application-vault-ca-bundle.yaml
   - application-vso.yaml
   - application-vso-config.yaml
   - application-longhorn.yaml

@@ -1,0 +1,16 @@
+# Vault CA Bundle — Single Source of Truth
+# Deploys the root CA Secret into ALL namespaces that need it.
+#
+# Structure:
+#   root-ca.crt        — PEM certificate (home-arpa-root-2025, RSA 4096, expires 2036-02-19)
+#   base/              — secretGenerator template
+#   cert-manager/      — overlay → cert-manager namespace (for ClusterIssuer caBundleSecretRef)
+#   security/          — overlay → security namespace (for VSO VaultConnection caCertSecretRef)
+#
+# To rotate the CA: update root-ca.crt, commit, ArgoCD syncs to all consumers.
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - cert-manager
+  - security
