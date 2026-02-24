@@ -4,8 +4,46 @@
 # targets the minimum required endpoints, ports, and pod selectors.
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# argocd — Helm registries (intra-namespace + GitHub now in separate files)
+# argocd — intra-namespace + GitHub for git fetch
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+# ArgoCD pods communicate heavily within the namespace:
+#   server ↔ redis, controller ↔ repo-server, applicationset ↔ server, etc.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-intra-namespace
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# repo-server fetches manifests from GitHub over HTTPS.
+# Uses toFQDNs — Cilium DNS proxy intercepts the lookup and populates
+# allow rules for resolved IPs. Requires dns-proxy (enabled by default).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-github
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  egress:
+    - toFQDNs:
+        - matchName: "github.com"
+        - matchName: "api.github.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
 ---
 # Helm chart sources — ArgoCD repo-server fetches Helm index + tarballs.
 # ArgoCD repo-server fetches Helm index + tarballs from these registries.

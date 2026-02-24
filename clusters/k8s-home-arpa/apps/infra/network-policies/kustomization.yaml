@@ -3,9 +3,6 @@ kind: Kustomization
 resources:
   - default-deny.yaml
   - allow-egress-core.yaml
-  - allow-egress-dns-apiserver-argocd.yaml
-  - allow-egress-intra-argocd.yaml
-  - allow-egress-github-argocd.yaml
   - allow-egress-services.yaml
   - allow-webhooks.yaml
   - allow-gateway-ingress.yaml
