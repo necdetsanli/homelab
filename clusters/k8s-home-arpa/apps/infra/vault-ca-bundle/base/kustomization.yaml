@@ -16,4 +16,4 @@ secretGenerator:
   - name: vault-ca-bundle
     type: Opaque
     files:
-      - ca.crt=../root-ca.crt
+    - ca.crt=root-ca.crt

@@ -36,7 +36,7 @@ private/
 *.jks
 *.keystore
 *.crt
-!**/vault-ca-bundle/root-ca.crt
+!**/vault-ca-bundle/base/root-ca.crt
 *.csr
 *.der
 
