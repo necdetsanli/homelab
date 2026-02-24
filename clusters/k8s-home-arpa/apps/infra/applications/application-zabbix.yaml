@@ -13,7 +13,7 @@ spec:
   project: platform
   source:
     repoURL: "https://zabbix-community.github.io/helm-zabbix"
-    chart: zabbix-helm-chrt
+    chart: zabbix
     targetRevision: 4.5.0
     helm:
       releaseName: zabbix

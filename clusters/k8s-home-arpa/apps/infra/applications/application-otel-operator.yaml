@@ -21,6 +21,10 @@ spec:
         crds:
           create: true
         manager:
+          # Required since chart 0.56.0 — must explicitly set collector image.
+          # Using contrib for broad receiver/exporter support.
+          collectorImage:
+            repository: "otel/opentelemetry-collector-contrib"
           resources:
             requests:
               cpu: 20m
