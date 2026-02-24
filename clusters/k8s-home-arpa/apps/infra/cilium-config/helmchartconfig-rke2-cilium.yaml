@@ -39,6 +39,9 @@ spec:
             namespace: cilium-spire
             existingNamespace: true
             server:
+              # Single replica is acceptable for homelab (3-node cluster).
+              # For HA: increase to 3 and add podAntiAffinity via
+              # server.affinity in Cilium values. Requires 3+ nodes.
               replicas: 1
               dataStorage:
                 enabled: true

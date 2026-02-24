@@ -1,0 +1,71 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13924f8d5 # v4
+
+      - name: Install yamllint
+        run: pip install --quiet yamllint
+
+      - name: Run yamllint
+        run: |
+          yamllint -c .yamllint.yml \
+            clusters/ \
+            infrastructure/config/ \
+            infrastructure/edge/haproxy/certsync/
+
+  kustomize-build:
+    name: Kustomize Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13924f8d5 # v4
+
+      - name: Install kustomize
+        uses: imranismail/setup-kustomize@2ba527d4d7d0b3af58f1025ee4adf15c3698cc53 # v2
+        with:
+          kustomize-version: "5.6.0"
+
+      - name: Build all overlays
+        run: |
+          set -euo pipefail
+          errors=0
+          while IFS= read -r dir; do
+            echo "--- Building ${dir} ---"
+            if ! kustomize build "${dir}" > /dev/null 2>&1; then
+              echo "FAIL: ${dir}"
+              kustomize build "${dir}" || true
+              errors=$((errors + 1))
+            fi
+          done < <(find clusters/ -name kustomization.yaml -exec dirname {} \;)
+
+          if [ "${errors}" -gt 0 ]; then
+            echo "::error::${errors} kustomize overlay(s) failed to build"
+            exit 1
+          fi
+          echo "All overlays built successfully"
+
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13924f8d5 # v4
+
+      - name: Run ShellCheck
+        run: |
+          find infrastructure/edge -name '*.sh' -o -name 'haproxy-certs-*' \
+            | xargs shellcheck --severity=warning

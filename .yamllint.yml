@@ -1,0 +1,39 @@
+---
+# yamllint configuration for homelab repo
+# Runs in CI via .github/workflows/validate.yml
+
+extends: default
+
+rules:
+  # Allow long lines in manifests (Helm values, URLs, comments)
+  line-length:
+    max: 200
+    allow-non-breakable-inline-mappings: true
+
+  # ArgoCD install.yaml and vendor manifests use inconsistent indentation
+  indentation:
+    spaces: 2
+    indent-sequences: whatever
+
+  # Allow --- document start markers to be absent
+  document-start: disable
+
+  # Trailing spaces are cleaned by .editorconfig but don't fail CI
+  trailing-spaces: enable
+
+  # Allow inline comments
+  comments:
+    require-starting-space: true
+    ignore-shebangs: true
+    min-spaces-from-content: 1
+
+  # Trust file-level truthiness (yes/no in YAML)
+  truthy:
+    check-keys: false
+    allowed-values: ["true", "false", "yes", "no", "on", "off"]
+
+ignore: |
+  # Vendored upstream manifests -- not our code to lint
+  vendor/
+  # Large upstream ArgoCD install manifest
+  clusters/k8s-home-arpa/bootstrap/10-argocd/install.yaml

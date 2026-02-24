@@ -12,6 +12,24 @@ spec:
   orphanedResources:
     warn: true
 
+  # Sync windows: auto-sync allowed only during maintenance window (UTC)
+  # Manual syncs are always permitted regardless of window.
+  syncWindows:
+    # Allow auto-sync daily 00:00-06:00 UTC (03:00-09:00 TR)
+    - kind: allow
+      schedule: "0 0 * * *"
+      duration: 6h
+      applications:
+        - "*"
+      manualSync: true
+    # Deny auto-sync outside the window (catch-all)
+    - kind: deny
+      schedule: "0 6 * * *"
+      duration: 18h
+      applications:
+        - "*"
+      manualSync: true
+
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
     - "https://charts.jetstack.io"                   # cert-manager
