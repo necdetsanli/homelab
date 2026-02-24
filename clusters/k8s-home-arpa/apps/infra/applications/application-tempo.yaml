@@ -1,0 +1,77 @@
+# Tempo — distributed tracing backend for the LGTM stack.
+# Single binary mode for homelab efficiency.
+# Receives traces from OpenTelemetry Collector via OTLP.
+# Grafana queries Tempo via HTTP API (port 3100).
+# Also exposes Jaeger-compatible query API for interoperability.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://grafana.github.io/helm-charts"
+    chart: tempo
+    targetRevision: 1.12.0
+    helm:
+      releaseName: tempo
+      valuesObject:
+        tempo:
+          storage:
+            trace:
+              backend: local
+              local:
+                path: /var/tempo/traces
+          retention: 168h  # 7 days
+          # OTLP receivers for OTel Collector ingestion
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: "0.0.0.0:4317"
+                http:
+                  endpoint: "0.0.0.0:4318"
+          # Enable search for Grafana trace discovery
+          search:
+            enabled: true
+          # Enable metrics generator (RED metrics from traces)
+          metricsGenerator:
+            enabled: true
+            remoteWriteUrl: "http://mimir-gateway.monitoring.svc.cluster.local:80/api/v1/push"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        persistence:
+          enabled: true
+          size: 10Gi
+          storageClassName: longhorn
+        securityContext:
+          runAsNonRoot: true
+          fsGroup: 10001
+          runAsUser: 10001
+          runAsGroup: 10001
+          seccompProfile:
+            type: RuntimeDefault
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: tracing
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

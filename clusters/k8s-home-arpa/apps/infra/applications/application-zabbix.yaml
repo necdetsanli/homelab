@@ -1,0 +1,79 @@
+# Zabbix — infrastructure monitoring (SNMP, agent-based, IPMI).
+# Complements LGTM (application-level) with network/hardware monitoring.
+# Includes: server, web UI, agent, embedded PostgreSQL.
+# Exposed via Gateway API at zabbix.mgmt.home.arpa.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zabbix
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://zabbix-community.github.io/helm-zabbix"
+    chart: zabbix-helm-chrt
+    targetRevision: 4.5.0
+    helm:
+      releaseName: zabbix
+      valuesObject:
+        # Override chart-generated names for clean service names
+        fullnameOverride: zabbix
+        zabbixServer:
+          enabled: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        zabbixWeb:
+          enabled: true
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        zabbixAgent2:
+          enabled: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        # Embedded PostgreSQL for Zabbix data
+        postgresql:
+          enabled: true
+          persistence:
+            enabled: true
+            size: 10Gi
+            storageClassName: longhorn
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

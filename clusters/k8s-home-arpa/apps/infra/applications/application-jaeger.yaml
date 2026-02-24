@@ -1,0 +1,63 @@
+# Jaeger — distributed tracing UI and collector.
+# All-in-one mode: collector + query + agent in a single pod.
+# Receives traces from OpenTelemetry Collector via OTLP (port 4317).
+# In-memory storage for homelab; upgrade to ES backend for persistence.
+# Exposed via Gateway API at jaeger.mgmt.home.arpa.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://jaegertracing.github.io/helm-charts"
+    chart: jaeger
+    targetRevision: 3.3.1
+    helm:
+      releaseName: jaeger
+      valuesObject:
+        # All-in-one mode: single pod with collector + query + agent
+        allInOne:
+          enabled: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        # In-memory storage — traces lost on pod restart.
+        # For persistence, configure ES backend:
+        #   storage.type: elasticsearch
+        #   storage.elasticsearch.host: homelab-es-http.logging.svc
+        storage:
+          type: memory
+        # Data store provisioning — disable (we manage ES separately via ECK)
+        provisionDataStore:
+          cassandra: false
+        # Disable separate components (all-in-one handles everything)
+        collector:
+          enabled: false
+        query:
+          enabled: false
+        agent:
+          enabled: false
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: tracing
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

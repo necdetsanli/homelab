@@ -1,0 +1,106 @@
+# Grafana — unified observability dashboard for LGTM stack.
+# Pre-configured datasources: Mimir (metrics), Loki (logs), Tempo (traces),
+# Jaeger (traces), Elasticsearch (log analytics).
+# Exposed via Gateway API at grafana.mgmt.home.arpa.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://grafana.github.io/helm-charts"
+    chart: grafana
+    targetRevision: 8.6.4
+    helm:
+      releaseName: grafana
+      valuesObject:
+        # Initial admin credentials — change immediately after first login.
+        # TODO: Integrate with Vault via VSO for secret management.
+        adminUser: admin
+        adminPassword: "changeme"
+        persistence:
+          enabled: true
+          size: 5Gi
+          storageClassName: longhorn
+        # Pre-configured datasources for the full observability stack
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+              - name: Mimir
+                type: prometheus
+                url: http://mimir-gateway.monitoring.svc.cluster.local:80/prometheus
+                access: proxy
+                isDefault: true
+              - name: Loki
+                type: loki
+                url: http://loki-gateway.logging.svc.cluster.local:80
+                access: proxy
+              - name: Tempo
+                type: tempo
+                url: http://tempo.tracing.svc.cluster.local:3100
+                access: proxy
+                jsonData:
+                  tracesToLogsV2:
+                    datasourceUid: loki
+                  tracesToMetrics:
+                    datasourceUid: mimir
+                  nodeGraph:
+                    enabled: true
+                  serviceMap:
+                    datasourceUid: mimir
+              - name: Jaeger
+                type: jaeger
+                url: http://jaeger-query.tracing.svc.cluster.local:16686
+                access: proxy
+              - name: Elasticsearch
+                type: elasticsearch
+                url: https://homelab-es-http.logging.svc.cluster.local:9200
+                access: proxy
+                jsonData:
+                  tlsSkipVerify: true
+                  timeField: "@timestamp"
+        # Homelab-sized resource limits
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        # PSA restricted compliance
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 472
+          runAsGroup: 472
+          fsGroup: 472
+          seccompProfile:
+            type: RuntimeDefault
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

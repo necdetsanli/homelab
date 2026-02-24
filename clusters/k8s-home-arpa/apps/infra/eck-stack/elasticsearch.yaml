@@ -1,0 +1,51 @@
+# Elasticsearch cluster managed by ECK Operator.
+# Single-node deployment for homelab — adequate for log analytics workload.
+# ECK auto-generates 'elastic' user credentials in Secret: homelab-es-elastic-user
+# Service endpoint: homelab-es-http.logging.svc:9200
+---
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: homelab
+  namespace: logging
+spec:
+  version: 8.16.0
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        # Disable mmap to comply with PSA restricted (no sysctl required)
+        node.store.allow_mmap: false
+        # Single-node discovery
+        discovery.type: single-node
+        # Disable machine learning (saves ~200MB RAM)
+        xpack.ml.enabled: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+                limits:
+                  cpu: 2
+                  memory: 2Gi
+              env:
+                - name: ES_JAVA_OPTS
+                  value: "-Xms1g -Xmx1g"
+          # Elasticsearch needs writable data directory
+          securityContext:
+            fsGroup: 1000
+            runAsUser: 1000
+            runAsGroup: 1000
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+            storageClassName: longhorn

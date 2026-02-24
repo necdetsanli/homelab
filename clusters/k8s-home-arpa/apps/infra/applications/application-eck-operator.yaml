@@ -1,0 +1,58 @@
+# ECK Operator — Elastic Cloud on Kubernetes.
+# Manages Elasticsearch and Kibana lifecycle via CRDs.
+# CRDs are cluster-scoped; operator runs in elastic-system namespace.
+# Elasticsearch + Kibana CRs deploy at sync-wave 4 (after operator is ready).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eck-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://helm.elastic.co"
+    chart: eck-operator
+    targetRevision: 2.14.0
+    helm:
+      releaseName: eck-operator
+      valuesObject:
+        installCRDs: true
+        # Operator resource limits
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        # PSA restricted compliance
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: elastic-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

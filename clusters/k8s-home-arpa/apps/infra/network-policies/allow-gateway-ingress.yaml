@@ -50,3 +50,169 @@ spec:
         - ports:
             - port: "8081"
               protocol: TCP
+---
+# Grafana: allow Gateway proxy to reach Grafana on port 3000
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-grafana
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Zabbix Web: allow Gateway proxy to reach Zabbix web UI
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-zabbix-web
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: zabbix-web
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Kibana: allow Gateway proxy to reach ECK-managed Kibana on port 5601
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-kibana
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      kibana.k8s.elastic.co/name: homelab
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "5601"
+              protocol: TCP
+---
+# Jaeger UI: allow Gateway proxy to reach Jaeger query on port 16686
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-jaeger-ui
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "16686"
+              protocol: TCP
+---
+# Tempo + Jaeger: allow OTel Collector ingress on OTLP port 4317
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-otel-to-tracing
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: opentelemetry
+      toPorts:
+        - ports:
+            - port: "4317"
+              protocol: TCP
+            - port: "4318"
+              protocol: TCP
+---
+# Mimir: allow OTel Collector + Tempo (metrics generator) ingress
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-otel-to-monitoring
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: opentelemetry
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: tracing
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+---
+# Loki: allow OTel Collector ingress on gateway port 80
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-otel-to-logging
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: opentelemetry
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+---
+# Elasticsearch: allow Grafana + ECK operator ingress
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-es-ingress
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      elasticsearch.k8s.elastic.co/cluster-name: homelab
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: elastic-system
+      toPorts:
+        - ports:
+            - port: "9200"
+              protocol: TCP
+            - port: "9300"
+              protocol: TCP

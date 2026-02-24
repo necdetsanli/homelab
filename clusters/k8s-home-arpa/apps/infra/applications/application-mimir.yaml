@@ -1,0 +1,94 @@
+# Mimir — long-term metrics storage backend for the LGTM stack.
+# Deployed in monolithic mode (single process) for homelab efficiency.
+# Receives metrics from OpenTelemetry Collector via OTLP.
+# Grafana queries Mimir via the gateway at /prometheus endpoint.
+# Embedded MinIO provides S3-compatible object storage.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mimir
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://grafana.github.io/helm-charts"
+    chart: mimir-distributed
+    targetRevision: 5.5.1
+    helm:
+      releaseName: mimir
+      valuesObject:
+        # Monolithic mode: all Mimir components in a single process.
+        # Drastically reduces resource usage vs distributed microservices.
+        # Suitable for homelab with < 100K active series.
+        deploymentMode: monolithic
+        mimir:
+          structuredConfig:
+            multitenancy_enabled: false
+            limits:
+              max_global_series_per_user: 500000
+              ingestion_rate: 10000
+        monolithic:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1536Mi
+          persistence:
+            enabled: true
+            size: 10Gi
+            storageClassName: longhorn
+        # Embedded MinIO for S3-compatible object storage (required by Mimir)
+        minio:
+          enabled: true
+        # Nginx gateway — single API endpoint for Grafana + OTel Collector
+        gateway:
+          enabledNonEnterprise: true
+          replicas: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        # Disable distributed components (monolithic mode handles everything)
+        ingester:
+          replicas: 0
+        distributor:
+          replicas: 0
+        querier:
+          replicas: 0
+        query_frontend:
+          replicas: 0
+        compactor:
+          replicas: 0
+        store_gateway:
+          replicas: 0
+        # Disable optional sub-charts
+        overrides_exporter:
+          replicas: 0
+        ruler:
+          replicas: 0
+        alertmanager:
+          replicas: 0
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

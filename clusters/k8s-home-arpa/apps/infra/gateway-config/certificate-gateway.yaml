@@ -18,6 +18,11 @@ spec:
   dnsNames:
     - "longhorn.mgmt.home.arpa"
     - "hubble.mgmt.home.arpa"
+    # Observability UIs
+    - "grafana.mgmt.home.arpa"
+    - "kibana.mgmt.home.arpa"
+    - "jaeger.mgmt.home.arpa"
+    - "zabbix.mgmt.home.arpa"
   duration: 720h      # 30 days
   renewBefore: 168h   # renew 7 days early
   privateKey:

@@ -12,4 +12,19 @@ resources:
   - application-gateway-api.yaml
   - application-gateway-config.yaml
   - application-network-policies.yaml
+  # Observability: LGTM stack
+  - application-grafana.yaml
+  - application-mimir.yaml
+  - application-loki.yaml
+  - application-tempo.yaml
+  # Observability: Zabbix
+  - application-zabbix.yaml
+  # Observability: Elasticsearch + Kibana (ECK)
+  - application-eck-operator.yaml
+  - application-eck-stack.yaml
+  # Observability: OpenTelemetry
+  - application-otel-operator.yaml
+  - application-otel-collector.yaml
+  # Observability: Jaeger
+  - application-jaeger.yaml
 

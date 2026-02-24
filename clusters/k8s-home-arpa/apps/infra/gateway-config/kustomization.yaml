@@ -5,5 +5,9 @@ resources:
   - gateway.yaml
   - httproute-longhorn.yaml
   - httproute-hubble.yaml
+  - httproute-grafana.yaml
+  - httproute-kibana.yaml
+  - httproute-jaeger.yaml
+  - httproute-zabbix.yaml
   - referencegrant-longhorn.yaml
   - netpol-gateway.yaml

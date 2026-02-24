@@ -1,0 +1,46 @@
+# OpenTelemetry Operator — manages OpenTelemetry Collector instances via CRDs.
+# The Operator enables declarative collector deployment (DaemonSet, Deployment, Sidecar).
+# Collector CR deploys at sync-wave 4 after the operator is ready.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://open-telemetry.github.io/opentelemetry-helm-charts"
+    chart: opentelemetry-operator
+    targetRevision: 0.74.0
+    helm:
+      releaseName: otel-operator
+      valuesObject:
+        # Install CRDs for OpenTelemetryCollector, Instrumentation
+        crds:
+          create: true
+        manager:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: opentelemetry
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

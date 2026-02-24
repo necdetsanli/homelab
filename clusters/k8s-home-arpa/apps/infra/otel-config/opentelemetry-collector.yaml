@@ -1,0 +1,133 @@
+# OpenTelemetry Collector — central telemetry pipeline (DaemonSet mode).
+#
+# Data flow:
+#   Applications -> OTLP (4317/4318) -> Collector -> routes to:
+#     Metrics  -> Mimir (OTLP HTTP)
+#     Logs     -> Loki  (OTLP HTTP)
+#     Traces   -> Tempo  (OTLP gRPC) + Jaeger (OTLP gRPC)
+#
+# DaemonSet ensures one collector per node for host metrics collection.
+# Applications send OTLP to: otel-collector.opentelemetry.svc:4317 (gRPC)
+#                          or otel-collector.opentelemetry.svc:4318 (HTTP)
+#
+# To add container log collection, enable the filelog receiver:
+#   filelog:
+#     include: ["/var/log/containers/*.log"]
+#     exclude: ["/var/log/containers/otel-collector*.log"]
+# and mount /var/log as hostPath volume.
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector
+  namespace: opentelemetry
+spec:
+  mode: daemonset
+  # Use contrib image for elasticsearch exporter and additional receivers
+  image: otel/opentelemetry-collector-contrib:0.115.0
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    # Node name for hostmetrics attribution
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  # Volume mounts for host metrics (requires PSA baseline)
+  volumeMounts:
+    - name: hostfs
+      mountPath: /hostfs
+      readOnly: true
+  volumes:
+    - name: hostfs
+      hostPath:
+        path: /
+  config:
+    receivers:
+      # OTLP receiver — primary ingestion point for applications
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      # Host metrics — CPU, memory, disk, network, load
+      hostmetrics:
+        collection_interval: 30s
+        root_path: /hostfs
+        scrapers:
+          cpu: {}
+          memory: {}
+          disk: {}
+          filesystem: {}
+          network: {}
+          load: {}
+    processors:
+      # Batch traces/metrics/logs for efficient export
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+      # Memory limiter prevents OOM kills
+      memory_limiter:
+        check_interval: 5s
+        limit_mib: 200
+        spike_limit_mib: 50
+      # Add Kubernetes metadata to telemetry
+      resourcedetection:
+        detectors:
+          - env
+          - system
+        system:
+          hostname_sources:
+            - os
+    exporters:
+      # Metrics -> Mimir via OTLP HTTP
+      otlphttp/mimir:
+        endpoint: http://mimir-gateway.monitoring.svc.cluster.local:80/otlp
+      # Logs -> Loki via OTLP HTTP
+      otlphttp/loki:
+        endpoint: http://loki-gateway.logging.svc.cluster.local:80/otlp
+      # Traces -> Tempo via OTLP gRPC
+      otlp/tempo:
+        endpoint: tempo.tracing.svc.cluster.local:4317
+        tls:
+          insecure: true
+      # Traces -> Jaeger via OTLP gRPC (all-in-one)
+      otlp/jaeger:
+        endpoint: jaeger-all-in-one.tracing.svc.cluster.local:4317
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        metrics:
+          receivers:
+            - otlp
+            - hostmetrics
+          processors:
+            - memory_limiter
+            - resourcedetection
+            - batch
+          exporters:
+            - otlphttp/mimir
+        logs:
+          receivers:
+            - otlp
+          processors:
+            - memory_limiter
+            - batch
+          exporters:
+            - otlphttp/loki
+        traces:
+          receivers:
+            - otlp
+          processors:
+            - memory_limiter
+            - batch
+          exporters:
+            - otlp/tempo
+            - otlp/jaeger

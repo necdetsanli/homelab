@@ -1,0 +1,93 @@
+# Loki — log aggregation backend for the LGTM stack.
+# Deployed in SingleBinary mode for homelab efficiency.
+# Receives logs from OpenTelemetry Collector via OTLP.
+# Grafana queries Loki via the gateway service.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: platform
+  source:
+    repoURL: "https://grafana.github.io/helm-charts"
+    chart: loki
+    targetRevision: 6.22.0
+    helm:
+      releaseName: loki
+      valuesObject:
+        # SingleBinary: all Loki components in one process.
+        # Perfect for homelab with moderate log volume.
+        deploymentMode: SingleBinary
+        loki:
+          auth_enabled: false
+          commonConfig:
+            replication_factor: 1
+          storage:
+            type: filesystem
+          schemaConfig:
+            configs:
+              - from: "2024-01-01"
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+          # Retention: auto-delete logs older than 7 days
+          limits_config:
+            retention_period: 168h
+        singleBinary:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          persistence:
+            enabled: true
+            size: 10Gi
+            storageClassName: longhorn
+        # Nginx gateway — single API endpoint
+        gateway:
+          enabled: true
+          replicas: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        # Disable distributed components (SingleBinary handles everything)
+        backend:
+          replicas: 0
+        read:
+          replicas: 0
+        write:
+          replicas: 0
+        # Disable caches (not needed for single binary + filesystem)
+        chunksCache:
+          enabled: false
+        resultsCache:
+          enabled: false
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: logging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

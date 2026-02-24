@@ -16,6 +16,7 @@ metadata:
   name: monitoring
   labels:
     homelab.necdetsanli.io/tier: observability
+    homelab.necdetsanli.io/gateway-access: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
@@ -28,6 +29,7 @@ metadata:
   name: logging
   labels:
     homelab.necdetsanli.io/tier: observability
+    homelab.necdetsanli.io/gateway-access: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
@@ -85,6 +87,45 @@ metadata:
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/warn: baseline
     pod-security.kubernetes.io/audit: baseline
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tracing
+  labels:
+    homelab.necdetsanli.io/tier: observability
+    homelab.necdetsanli.io/gateway-access: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry
+  labels:
+    homelab.necdetsanli.io/tier: observability
+    # DaemonSet collector requires hostPath mounts for /proc, /sys metrics
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: elastic-system
+  labels:
+    homelab.necdetsanli.io/tier: platform
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 ---

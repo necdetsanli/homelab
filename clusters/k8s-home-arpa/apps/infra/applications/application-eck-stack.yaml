@@ -1,0 +1,46 @@
+# ECK Stack — Elasticsearch + Kibana custom resources managed by ECK Operator.
+# Deployed at sync-wave 4 to ensure ECK Operator CRDs exist first.
+# Elasticsearch: single-node cluster with filesystem storage.
+# Kibana: web UI for log analytics and search.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eck-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: platform
+  source:
+    repoURL: "https://github.com/necdetsanli/homelab.git"
+    targetRevision: "main"
+    path: clusters/k8s-home-arpa/apps/infra/eck-stack
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: logging
+  # ECK operator mutates CRs with default values — ignore operator-managed fields
+  ignoreDifferences:
+    - group: elasticsearch.k8s.elastic.co
+      kind: Elasticsearch
+      jsonPointers:
+        - /spec/nodeSets/0/podTemplate
+        - /metadata/annotations
+    - group: kibana.k8s.elastic.co
+      kind: Kibana
+      jsonPointers:
+        - /spec/podTemplate
+        - /metadata/annotations
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+      - RespectIgnoreDifferences=true

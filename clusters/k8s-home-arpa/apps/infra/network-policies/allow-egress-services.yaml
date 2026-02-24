@@ -277,6 +277,40 @@ spec:
     - toEndpoints:
         - {}
 ---
+# Grafana -> Mimir (monitoring), Loki (logging), Tempo (tracing), Jaeger (tracing), ES (logging)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-grafana-datasources
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  egress:
+    # Loki gateway in logging namespace
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: logging
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "9200"
+              protocol: TCP
+    # Tempo + Jaeger in tracing namespace
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: tracing
+      toPorts:
+        - ports:
+            - port: "3100"
+              protocol: TCP
+            - port: "16686"
+              protocol: TCP
+---
 # TODO: When deploying Loki/Fluentd, add egress for log collection.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -290,3 +324,149 @@ spec:
   egress:
     - toEndpoints:
         - {}
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# tracing — intra-namespace (Tempo + Jaeger inter-pod)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-intra-namespace
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# Tempo metrics generator -> Mimir (remote write)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-tempo-mimir
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# opentelemetry — intra-namespace + cross-namespace exports + host metrics
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-intra-namespace
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# OTel Collector needs host access for hostmetrics receiver
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-host
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - host
+        - remote-node
+---
+# OTel Collector -> Mimir (monitoring:80), Loki (logging:80), Tempo (tracing:4317), Jaeger (tracing:4317)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-otel-backends
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    # Mimir gateway in monitoring namespace
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+    # Loki gateway in logging namespace
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: logging
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+    # Tempo + Jaeger OTLP gRPC in tracing namespace
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: tracing
+      toPorts:
+        - ports:
+            - port: "4317"
+              protocol: TCP
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# elastic-system — intra-namespace + cross-namespace to logging (ES management)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-intra-namespace
+  namespace: elastic-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# ECK operator manages Elasticsearch + Kibana in logging namespace
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-eck-to-logging
+  namespace: elastic-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: logging
+      toPorts:
+        - ports:
+            - port: "9200"
+              protocol: TCP
+            - port: "9300"
+              protocol: TCP
+            - port: "5601"
+              protocol: TCP

@@ -32,9 +32,15 @@ spec:
 
   sourceRepos:
     - "https://github.com/necdetsanli/homelab.git"
-    - "https://charts.jetstack.io"                   # cert-manager
-    - "https://helm.releases.hashicorp.com"            # vault-secrets-operator
-    - "https://charts.longhorn.io"                       # longhorn
+    - "https://charts.jetstack.io"
+    - "https://helm.releases.hashicorp.com"
+    - "https://charts.longhorn.io"
+    # Observability stack
+    - "https://grafana.github.io/helm-charts"
+    - "https://zabbix-community.github.io/helm-zabbix"
+    - "https://helm.elastic.co"
+    - "https://open-telemetry.github.io/opentelemetry-helm-charts"
+    - "https://jaegertracing.github.io/helm-charts"
 
   destinations:
     - server: "https://kubernetes.default.svc"
@@ -57,6 +63,13 @@ spec:
     # SPIRE server + agent for Cilium mutual authentication
     - server: "https://kubernetes.default.svc"
       namespace: "cilium-spire"
+    # Observability stack
+    - server: "https://kubernetes.default.svc"
+      namespace: "tracing"
+    - server: "https://kubernetes.default.svc"
+      namespace: "opentelemetry"
+    - server: "https://kubernetes.default.svc"
+      namespace: "elastic-system"
 
   # Cluster-scoped resources: strict allow-list
   clusterResourceWhitelist:
@@ -106,6 +119,12 @@ spec:
     # VSO (Vault Secrets Operator) cluster-scoped CRDs
     - group: "secrets.hashicorp.com"
       kind: "VaultAuthGlobal"
+    # ECK CRDs (cluster-scoped)
+    - group: "maps.k8s.elastic.co"
+      kind: "ElasticMapsServer"
+    # OpenTelemetry CRDs (cluster-scoped)
+    - group: "opentelemetry.io"
+      kind: "Instrumentation"
 
   # Namespaced resources: strict allow-list
   namespaceResourceWhitelist:
@@ -182,3 +201,13 @@ spec:
       kind: "HCPAuth"
     - group: "secrets.hashicorp.com"
       kind: "HCPVaultSecretsApp"
+    # ECK managed resources
+    - group: "elasticsearch.k8s.elastic.co"
+      kind: "Elasticsearch"
+    - group: "kibana.k8s.elastic.co"
+      kind: "Kibana"
+    # OpenTelemetry managed resources
+    - group: "opentelemetry.io"
+      kind: "OpenTelemetryCollector"
+    - group: "opentelemetry.io"
+      kind: "Instrumentation"

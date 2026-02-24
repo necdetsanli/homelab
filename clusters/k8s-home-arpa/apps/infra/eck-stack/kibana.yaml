@@ -1,0 +1,30 @@
+# Kibana managed by ECK Operator.
+# Automatically connects to Elasticsearch cluster 'homelab' in same namespace.
+# ECK handles TLS, user auth, and ES connection configuration.
+# Service endpoint: homelab-kb-http.logging.svc:5601
+---
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: homelab
+  namespace: logging
+spec:
+  version: 8.16.0
+  count: 1
+  elasticsearchRef:
+    name: homelab
+  podTemplate:
+    spec:
+      containers:
+        - name: kibana
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
