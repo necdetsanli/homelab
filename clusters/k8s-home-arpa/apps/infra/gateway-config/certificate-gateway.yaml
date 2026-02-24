@@ -21,5 +21,5 @@ spec:
   duration: 720h      # 30 days
   renewBefore: 168h   # renew 7 days early
   privateKey:
-    algorithm: RSA
-    size: 2048
+    algorithm: ECDSA
+    size: 256

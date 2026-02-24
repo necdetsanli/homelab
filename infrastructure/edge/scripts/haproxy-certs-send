@@ -24,7 +24,11 @@
 set -euo pipefail
 umask 077
 
-readonly VIP_IP="192.168.20.22"
+# Shared constants -- single source of truth
+# shellcheck source=edge-env.sh
+source /usr/local/lib/edge-env.sh
+
+readonly VIP_IP="${EDGE_VIP_IP}"
 if ! ip -4 -o addr show | awk '{print $4}' | grep -Eq "${VIP_IP}(/|$)"; then
   echo "Not VIP owner (${VIP_IP}). Skipping send."
   exit 0

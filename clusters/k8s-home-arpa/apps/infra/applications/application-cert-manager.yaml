@@ -20,6 +20,30 @@ spec:
         # Helm hooks are incompatible with ArgoCD sync
         startupapicheck:
           enabled: false
+        # Resource limits -- right-sized for homelab (3-node cluster)
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        webhook:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        cainjector:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
   destination:
     server: "https://kubernetes.default.svc"
     namespace: cert-manager

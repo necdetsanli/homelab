@@ -19,10 +19,14 @@
 set -euo pipefail
 umask 077
 
-readonly IPA_DNS_SERVER="192.168.50.5"
-readonly ACME_ZONE="acme.home.arpa."
-readonly KEYTAB="/etc/letsencrypt/krb5/certbot-dnsupd.keytab"
-readonly PRINCIPAL="certbot-dnsupd/$(hostname -f)@HOME.ARPA"
+# Shared constants (IPs, ACME zone, keytab) -- single source of truth
+# shellcheck source=../../scripts/edge-env.sh
+source /usr/local/lib/edge-env.sh
+
+readonly IPA_DNS_SERVER="${EDGE_IPA_DNS_SERVER}"
+readonly ACME_ZONE="${EDGE_ACME_ZONE}."
+readonly KEYTAB="${EDGE_KEYTAB}"
+readonly PRINCIPAL="${EDGE_PRINCIPAL}"
 
 readonly DOMAIN="${CERTBOT_DOMAIN:?CERTBOT_DOMAIN missing}"
 readonly VALIDATION="${CERTBOT_VALIDATION:?CERTBOT_VALIDATION missing}"

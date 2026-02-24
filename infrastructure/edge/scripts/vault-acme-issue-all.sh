@@ -31,6 +31,10 @@ warn() { logger -t "${LOG_TAG}" -p user.warning "$*"; echo "WARN: $*" >&2; }
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+# Shared constants (IPs, ACME zone, keytab) — single source of truth
+# shellcheck source=edge-env.sh
+source /usr/local/lib/edge-env.sh
+
 readonly ACME_BASE="https://vault.home.arpa/v1/pki_int/roles"
 readonly ACME_MGMT="${ACME_BASE}/edge-mgmt-frontend/acme/directory"
 readonly ACME_APP="${ACME_BASE}/edge-app-frontend/acme/directory"
@@ -38,12 +42,12 @@ readonly ACME_INFRA="${ACME_BASE}/home-arpa-fqdns/acme/directory"
 
 readonly AUTH_HOOK="/usr/local/lib/certbot-dns01/auth.sh"
 readonly CLEAN_HOOK="/usr/local/lib/certbot-dns01/cleanup.sh"
-readonly VIP_IP="192.168.20.22"
+readonly VIP_IP="${EDGE_VIP_IP}"
 
-readonly IPA_DNS_SERVER="192.168.50.5"
-readonly ACME_ZONE="acme.home.arpa"
-readonly KEYTAB="/etc/letsencrypt/krb5/certbot-dnsupd.keytab"
-readonly PRINCIPAL="certbot-dnsupd/$(hostname -f)@HOME.ARPA"
+readonly IPA_DNS_SERVER="${EDGE_IPA_DNS_SERVER}"
+readonly ACME_ZONE="${EDGE_ACME_ZONE}"
+readonly KEYTAB="${EDGE_KEYTAB}"
+readonly PRINCIPAL="${EDGE_PRINCIPAL}"
 
 readonly CERT_DIR="/etc/haproxy/certs"
 readonly SYNC_DIR="/etc/haproxy/certsync"

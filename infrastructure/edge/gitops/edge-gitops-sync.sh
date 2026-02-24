@@ -57,6 +57,7 @@ haproxy/haproxy.cfg|/etc/haproxy/haproxy.cfg|root:haproxy|0640|haproxy
 scripts/vault-acme-issue-all.sh|/usr/local/sbin/vault-acme-issue-all.sh|root:root|0750|none
 scripts/haproxy-certs-send|/usr/local/sbin/haproxy-certs-send|root:root|0750|none
 scripts/haproxy-certs-recv|/usr/local/sbin/haproxy-certs-recv|root:root|0750|none
+scripts/edge-env.sh|/usr/local/lib/edge-env.sh|root:root|0644|none
 certbot/dns01/auth.sh|/usr/local/lib/certbot-dns01/auth.sh|root:root|0750|none
 certbot/dns01/cleanup.sh|/usr/local/lib/certbot-dns01/cleanup.sh|root:root|0750|none
 certbot/systemd/vault-acme-issue-all.timer|/etc/systemd/system/vault-acme-issue-all.timer|root:root|0644|systemd
@@ -298,7 +299,7 @@ main() {
   # Uses haproxy-certs-send which handles allowlist enforcement, SSH transport,
   # and syncs both certsync config files and PEM bundles to edge-2.
   if "${need_haproxy}" && [[ -x /usr/local/sbin/haproxy-certs-send ]]; then
-    local vip_ip="192.168.20.22"
+    local vip_ip="${EDGE_VIP_IP:-192.168.20.22}"
     if ip -4 -o addr show | awk '{print $4}' | grep -Eq "${vip_ip}(/|$)"; then
       log "VIP owner — syncing to peer via haproxy-certs-send"
       /usr/local/sbin/haproxy-certs-send || warn "certsync send failed (peer will pick up on next ACME run)"
