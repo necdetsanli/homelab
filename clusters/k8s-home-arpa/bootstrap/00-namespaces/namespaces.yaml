@@ -4,6 +4,7 @@ metadata:
   name: argocd
   labels:
     homelab.necdetsanli.io/tier: platform
+    homelab.necdetsanli.io/gateway-access: "true"
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted

@@ -52,6 +52,7 @@ metadata:
   name: gateway-system
   labels:
     homelab.necdetsanli.io/tier: platform
+    homelab.necdetsanli.io/gateway-access: "true"
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
@@ -64,6 +65,7 @@ metadata:
   name: longhorn-system
   labels:
     homelab.necdetsanli.io/tier: platform
+    homelab.necdetsanli.io/gateway-access: "true"
     # Longhorn CSI plugin + manager need privileged access for block device management
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/warn: baseline
@@ -85,3 +87,13 @@ metadata:
     pod-security.kubernetes.io/audit: baseline
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
+---
+# kube-system label overlay — adds gateway-access for Hubble UI HTTPRoute.
+# kube-system is a built-in namespace; ServerSideApply merges these labels
+# without touching existing ownership.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+  labels:
+    homelab.necdetsanli.io/gateway-access: "true"

@@ -28,8 +28,16 @@ spec:
     namespace: "argocd"
   syncPolicy:
     automated:
-      prune: true
+      # prune disabled — accidentally removing deny policies opens the
+      # network. Use `argocd app sync network-policies --prune` manually.
+      prune: false
       selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false

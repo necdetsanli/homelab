@@ -1,13 +1,33 @@
-# Default-deny ingress for all platform namespaces.
-# Each component overlay should add explicit allow rules as needed.
-# NOTE: Egress is intentionally NOT denied here — components need DNS,
-# API server access, and cross-namespace traffic. Add explicit egress
-# policies per-component when ready.
+# Default-deny ingress AND egress for all managed namespaces.
+#
+# Companion allow policies provide explicit exceptions:
+#   allow-egress-core.yaml     — DNS + API server (every namespace)
+#   allow-egress-services.yaml — per-component egress (Vault, GitHub, NFS, etc.)
+#   allow-webhooks.yaml        — API server → webhook ingress
+#   allow-gateway-ingress.yaml — Envoy → backend service ingress
+#   allow-kube-system.yaml     — CoreDNS, Hubble, metrics-server ingress
+#   allow-spire.yaml           — SPIRE agent → server ingress
+#
+# Egress allow rules use CiliumNetworkPolicy (identity-based, L7-aware).
+# The deny baseline uses Kubernetes NetworkPolicy (CNI-agnostic, auditable).
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
   namespace: cert-manager
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -15,11 +35,12 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: monitoring
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -27,11 +48,12 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: logging
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -39,11 +61,12 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: security
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -51,11 +74,12 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: longhorn-system
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -63,11 +87,12 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: gateway-system
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -75,14 +100,15 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 # kube-system: Cilium, CoreDNS, Hubble, metrics-server.
-# Critical namespace — allow policies MUST cover CoreDNS (port 53)
-# before this deny takes effect, or cluster DNS will break.
+# Critical namespace — egress allows MUST cover DNS client resolution
+# and Hubble relay → agent before this deny takes effect.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: kube-system
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -90,13 +116,14 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress
 ---
 # cilium-spire: SPIRE server + agent for mutual TLS identity.
 # Allow rules must permit SPIRE agent → server gRPC (port 8081).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-ingress
+  name: default-deny
   namespace: cilium-spire
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -104,3 +131,4 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+    - Egress

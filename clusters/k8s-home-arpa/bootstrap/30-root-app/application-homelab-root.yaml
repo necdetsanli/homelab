@@ -16,7 +16,15 @@ spec:
     path: clusters/k8s-home-arpa/apps/infra/root
   syncPolicy:
     automated:
-      prune: true
+      # prune disabled — root app prune would cascade-delete ALL child
+      # Applications. Use `argocd app sync homelab-root --prune` manually.
+      prune: false
       selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
     syncOptions:
       - ServerSideApply=true

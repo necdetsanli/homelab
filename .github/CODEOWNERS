@@ -1,0 +1,30 @@
+# CODEOWNERS — require review before merge to main.
+#
+# Enable branch-protection rules in GitHub → Settings → Branches:
+#   - Require pull request before merging (1 approval)
+#   - Require review from Code Owners
+#   - Require status checks: gitleaks
+#   - Do not allow bypassing the above settings
+#
+# With ArgoCD auto-sync on main, every push is a production deploy.
+# Code review is the last human gate before cluster mutation.
+
+# Default: repository owner reviews all changes
+*                                       @necdetsanli
+
+# Bootstrap — controls ArgoCD itself and cluster namespaces
+clusters/k8s-home-arpa/bootstrap/       @necdetsanli
+
+# Security-critical: network policies, projects, RBAC
+clusters/k8s-home-arpa/apps/infra/network-policies/  @necdetsanli
+clusters/k8s-home-arpa/apps/infra/projects/           @necdetsanli
+clusters/k8s-home-arpa/apps/infra/config/             @necdetsanli
+
+# Edge infrastructure — HAProxy, Keepalived, Vault Agent
+infrastructure/edge/                    @necdetsanli
+
+# Vendored manifests — version bumps need careful review
+vendor/                                 @necdetsanli
+
+# CI/CD workflows
+.github/                                @necdetsanli

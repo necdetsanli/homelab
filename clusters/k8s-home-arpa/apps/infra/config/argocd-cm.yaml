@@ -1,0 +1,70 @@
+# ArgoCD ConfigMap — SSO via Dex LDAP connector to FreeIPA.
+#
+# ┌──────────┐   OIDC    ┌───────┐   LDAP/636   ┌──────────┐
+# │  Browser  │ ────────▶ │  Dex  │ ────────────▶ │ FreeIPA  │
+# └──────────┘           └───────┘               └──────────┘
+#
+# Prerequisites:
+#   1. FreeIPA server running with LDAPS enabled (port 636)
+#   2. Service account in FreeIPA: uid=svc-argocd,cn=users,cn=accounts,dc=home,dc=arpa
+#   3. Bind password stored in argocd-secret: dex.ldap.bindPW
+#   4. FreeIPA CA cert trusted (add to Dex deployment or use system trust)
+#
+# Activation steps:
+#   1. Uncomment the `url` and `dex.config` keys below
+#   2. Create the bind password secret:
+#      kubectl -n argocd patch secret argocd-secret -p \
+#        '{"stringData":{"dex.ldap.bindPW":"<PASSWORD>"}}'
+#   3. Restart Dex: kubectl -n argocd rollout restart deploy argocd-dex-server
+#   4. Test login at https://argocd.mgmt.home.arpa
+#   5. Once SSO works, disable admin: uncomment `admin.enabled: "false"`
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data: {}
+  ## ── Uncomment below after FreeIPA is deployed ──────────────────────────
+  #
+  # url: "https://argocd.mgmt.home.arpa"
+  #
+  # # Disable admin account after SSO is verified working
+  # # admin.enabled: "false"
+  #
+  # dex.config: |
+  #   connectors:
+  #     - type: ldap
+  #       name: FreeIPA
+  #       id: freeipa
+  #       config:
+  #         host: "ipa.home.arpa:636"
+  #         insecureNoSSL: false
+  #         insecureSkipVerify: false
+  #         # rootCA: "/etc/dex/tls/ca.crt"  # mount FreeIPA CA via extra volume
+  #         # Or use inline base64:
+  #         # rootCAData: "<base64-encoded-CA-cert>"
+  #
+  #         # Service account for LDAP bind (read-only access to user/group tree)
+  #         bindDN: "uid=svc-argocd,cn=users,cn=accounts,dc=home,dc=arpa"
+  #         bindPW: "$dex.ldap.bindPW"
+  #
+  #         usernamePrompt: "FreeIPA Username"
+  #
+  #         userSearch:
+  #           baseDN: "cn=users,cn=accounts,dc=home,dc=arpa"
+  #           filter: "(objectClass=person)"
+  #           username: uid
+  #           idAttr: dn
+  #           emailAttr: mail
+  #           nameAttr: cn
+  #
+  #         groupSearch:
+  #           baseDN: "cn=groups,cn=accounts,dc=home,dc=arpa"
+  #           filter: "(objectClass=groupOfNames)"
+  #           userMatchers:
+  #             - userAttr: dn
+  #               groupAttr: member
+  #           nameAttr: cn

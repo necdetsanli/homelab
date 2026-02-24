@@ -16,7 +16,15 @@ spec:
     namespace: "kube-system"
   syncPolicy:
     automated:
-      prune: true
+      # prune disabled — deleting Gateway API CRDs destroys all Gateway
+      # and HTTPRoute resources. Use `argocd app sync gateway-api-crds --prune` manually.
+      prune: false
       selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
     syncOptions:
       - ServerSideApply=true

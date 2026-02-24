@@ -1,4 +1,7 @@
-# This is an auto-generated file. DO NOT EDIT
+# ArgoCD v3.3.1 — vendored installation manifest. DO NOT EDIT
+# Source: https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.1/manifests/install.yaml
+# Integrity: see install.yaml.sha256
+# Bundled Dex: v2.43.0
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
