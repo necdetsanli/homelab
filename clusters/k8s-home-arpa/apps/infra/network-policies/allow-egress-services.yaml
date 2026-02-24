@@ -23,8 +23,11 @@ spec:
         - {}
 ---
 # repo-server fetches manifests from GitHub over HTTPS.
-# Uses toFQDNs — Cilium DNS proxy intercepts the lookup and populates
-# allow rules for resolved IPs. Requires dns-proxy (enabled by default).
+# Uses toFQDNs — Cilium DNS proxy intercepts DNS lookups, learns the
+# FQDN→IP mapping, and allows only the resolved IPs on port 443.
+# Prerequisite: the argocd dns-apiserver CNP must include rules.dns
+# (L7 DNS match) to activate the Cilium DNS proxy; plain L4 DNS
+# allow is not sufficient.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

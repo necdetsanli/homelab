@@ -6,6 +6,11 @@
 # Uses Cilium identity selectors instead of CIDR for zero-trust correctness.
 ---
 # ── argocd ──────────────────────────────────────────────────────────────────
+# NOTE: The DNS egress uses L7 rules.dns so that Cilium's DNS proxy
+# intercepts DNS responses and populates the FQDN cache.  This is
+# required for toFQDNs rules (allow-egress-github, allow-egress-helm-repos)
+# to resolve domain names to IPs.  Without rules.dns, the DNS proxy
+# never activates and toFQDNs rules cannot match any traffic.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -26,6 +31,9 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
     - toEntities:
         - kube-apiserver
       toPorts:
