@@ -48,7 +48,7 @@ fail() { logger -t "${LOG_TAG}" -p user.err "$*"; echo "ERROR: $*" >&2; exit 1; 
 #
 # Format: src|dest|owner:group|mode|service_tag
 #
-# service_tag groups: haproxy, keepalived, systemd, gitops
+# service_tag groups: haproxy, keepalived, vault-agent, systemd, gitops
 # Node-specific files use {HOSTNAME} placeholder.
 # =============================================================================
 read_manifest() {
@@ -63,6 +63,8 @@ certbot/systemd/vault-acme-issue-all.timer|/etc/systemd/system/vault-acme-issue-
 certbot/systemd/vault-acme-issue-all.service|/etc/systemd/system/vault-acme-issue-all.service|root:root|0644|systemd
 certbot/systemd/vault-acme-issue-all.service.d/20-certsync.conf|/etc/systemd/system/vault-acme-issue-all.service.d/20-certsync.conf|root:root|0644|systemd
 keepalived/scripts/keepalived-notify-certsync.sh|/usr/local/sbin/keepalived-notify-certsync.sh|root:root|0750|none
+vault-agent/vault-agent.hcl|/etc/vault-agent/vault-agent.hcl|root:root|0640|vault-agent
+vault-agent/vault-agent.service|/etc/systemd/system/vault-agent.service|root:root|0644|systemd
 gitops/edge-gitops-sync.sh|/usr/local/sbin/edge-gitops-sync.sh|root:root|0750|gitops
 gitops/edge-gitops-sync.service|/etc/systemd/system/edge-gitops-sync.service|root:root|0644|systemd
 gitops/edge-gitops-sync.timer|/etc/systemd/system/edge-gitops-sync.timer|root:root|0644|systemd
@@ -72,8 +74,14 @@ MANIFEST
 # Node-specific keepalived config (different source file per hostname)
 read_manifest_node_specific() {
   case "${HOSTNAME}" in
-    edge-1) echo "keepalived/edge-1-keepalived.conf|/etc/keepalived/keepalived.conf|root:root|0640|keepalived" ;;
-    edge-2) echo "keepalived/edge-2-keepalived.conf|/etc/keepalived/keepalived.conf|root:root|0640|keepalived" ;;
+    edge-1)
+      echo "keepalived/edge-1-keepalived.conf|/etc/keepalived/keepalived.conf|root:root|0640|keepalived"
+      echo "keepalived/edge-1-keepalived.conf.ctmpl|/etc/keepalived/keepalived.conf.ctmpl|root:root|0640|vault-agent"
+      ;;
+    edge-2)
+      echo "keepalived/edge-2-keepalived.conf|/etc/keepalived/keepalived.conf|root:root|0640|keepalived"
+      echo "keepalived/edge-2-keepalived.conf.ctmpl|/etc/keepalived/keepalived.conf.ctmpl|root:root|0640|vault-agent"
+      ;;
     *)      warn "Unknown hostname '${HOSTNAME}' — skipping node-specific keepalived config" ;;
   esac
 }
@@ -201,6 +209,17 @@ reload_keepalived() {
   systemctl reload keepalived
 }
 
+reload_vault_agent() {
+  # SIGHUP causes Vault Agent to re-read templates and re-render.
+  # If Vault Agent is not bootstrapped yet, this is a no-op.
+  if systemctl is-active --quiet vault-agent 2>/dev/null; then
+    log "Reloading Vault Agent (re-render templates)"
+    systemctl reload vault-agent
+  else
+    log "Vault Agent not running — skipping reload (bootstrap required)"
+  fi
+}
+
 reload_systemd() {
   log "Reloading systemd daemon"
   systemctl daemon-reload
@@ -228,6 +247,7 @@ main() {
   # Track which service groups need reloading
   local need_haproxy=false
   local need_keepalived=false
+  local need_vault_agent=false
   local need_systemd=false
   local deployed_count=0
   local failed_count=0
@@ -240,10 +260,11 @@ main() {
       if deploy_file "${src}" "${dest}" "${ownership}" "${mode}"; then
         deployed_count=$((deployed_count + 1))
         case "${tag}" in
-          haproxy)    need_haproxy=true ;;
-          keepalived) need_keepalived=true ;;
-          systemd)    need_systemd=true ;;
-          gitops)     need_systemd=true ;;
+          haproxy)      need_haproxy=true ;;
+          keepalived)   need_keepalived=true ;;
+          vault-agent)  need_vault_agent=true ;;
+          systemd)      need_systemd=true ;;
+          gitops)       need_systemd=true ;;
         esac
       else
         failed_count=$((failed_count + 1))
@@ -253,9 +274,16 @@ main() {
 
   log "Deployed ${deployed_count} file(s), ${failed_count} failed"
 
-  # ── Service reloads (order matters: systemd first, then services) ──
+  # ── Service reloads ──
+  # Order: systemd daemon-reload → vault-agent (re-renders keepalived.conf
+  # with secrets from Vault) → haproxy → keepalived (fallback; vault-agent's
+  # template command also reloads keepalived after rendering)
   if "${need_systemd}"; then
     reload_systemd
+  fi
+
+  if "${need_vault_agent}"; then
+    reload_vault_agent
   fi
 
   if "${need_haproxy}"; then

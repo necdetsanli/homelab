@@ -1,8 +1,9 @@
-# Keepalived — edge-2 (BACKUP)
-# Node: 192.168.20.21 | VIP: 192.168.20.22/24
+# Keepalived — edge-1 (MASTER)
+# Vault Agent template — rendered to /etc/keepalived/keepalived.conf
+# Node: 192.168.20.20 | VIP: 192.168.20.22/24
 
 global_defs {
-  router_id EDGE-2
+  router_id EDGE-1
   enable_script_security
   script_user keepalived_script
 }
@@ -18,25 +19,29 @@ vrrp_script chk_haproxy {
 }
 
 vrrp_instance VI_1 {
-  state BACKUP
+  state MASTER
   interface eth0
   virtual_router_id 51
-  priority 110
+  priority 120
   advert_int 1
 
+  # Stable failback: wait before reclaiming VIP
   preempt_delay 30
 
-  # Unicast
-  unicast_src_ip 192.168.20.21
+  # Unicast (no multicast dependency)
+  unicast_src_ip 192.168.20.20
   unicast_peer {
-    192.168.20.20
+    192.168.20.21
   }
 
-  # VRRP authentication is rendered by Vault Agent from the .ctmpl template.
-  # This static config is a safe fallback (no auth) deployed by edge-gitops-sync
-  # until Vault Agent is bootstrapped. Once running, Vault Agent overwrites this
-  # file with the rendered template that includes auth_pass from Vault KV.
-  # See: infrastructure/edge/vault-agent/vault-agent.hcl for bootstrap steps.
+  # VRRP auth_pass rendered from Vault KV v2
+  # Source: secret/edge/keepalived → vrrp_pass
+{{ with secret "secret/data/edge/keepalived" }}
+  authentication {
+    auth_type PASS
+    auth_pass {{ .Data.data.vrrp_pass }}
+  }
+{{ end }}
 
   virtual_ipaddress {
     192.168.20.22/24 dev eth0
@@ -46,6 +51,7 @@ vrrp_instance VI_1 {
     chk_haproxy
   }
 
+  # Fast ARP update on VIP failover
   garp_master_delay 1
   garp_master_repeat 5
   garp_master_refresh 60

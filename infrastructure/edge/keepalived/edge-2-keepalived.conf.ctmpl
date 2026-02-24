@@ -1,4 +1,5 @@
 # Keepalived — edge-2 (BACKUP)
+# Vault Agent template — rendered to /etc/keepalived/keepalived.conf
 # Node: 192.168.20.21 | VIP: 192.168.20.22/24
 
 global_defs {
@@ -32,11 +33,14 @@ vrrp_instance VI_1 {
     192.168.20.20
   }
 
-  # VRRP authentication is rendered by Vault Agent from the .ctmpl template.
-  # This static config is a safe fallback (no auth) deployed by edge-gitops-sync
-  # until Vault Agent is bootstrapped. Once running, Vault Agent overwrites this
-  # file with the rendered template that includes auth_pass from Vault KV.
-  # See: infrastructure/edge/vault-agent/vault-agent.hcl for bootstrap steps.
+  # VRRP auth_pass rendered from Vault KV v2
+  # Source: secret/edge/keepalived → vrrp_pass
+{{ with secret "secret/data/edge/keepalived" }}
+  authentication {
+    auth_type PASS
+    auth_pass {{ .Data.data.vrrp_pass }}
+  }
+{{ end }}
 
   virtual_ipaddress {
     192.168.20.22/24 dev eth0

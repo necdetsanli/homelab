@@ -1,0 +1,36 @@
+# /etc/systemd/system/vault-agent.service
+# =============================================================================
+# Vault Agent — renders keepalived.conf from .ctmpl template with secrets
+# from Vault KV v2 (AppRole auto-auth).
+#
+# Requires one-time bootstrap: role-id + secret-id placed in /etc/vault-agent/
+# See vault-agent.hcl header for full bootstrap instructions.
+#
+# Deployed to: /etc/systemd/system/vault-agent.service
+# =============================================================================
+[Unit]
+Description=HashiCorp Vault Agent — edge secret delivery
+Documentation=https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent
+After=network-online.target
+Wants=network-online.target
+
+# Only start if AppRole credentials have been bootstrapped
+ConditionPathExists=/etc/vault-agent/vault-agent.hcl
+ConditionPathExists=/etc/vault-agent/role-id
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/vault agent -config=/etc/vault-agent/vault-agent.hcl
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGTERM
+
+# Security hardening
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/etc/keepalived /etc/vault-agent
+
+[Install]
+WantedBy=multi-user.target
