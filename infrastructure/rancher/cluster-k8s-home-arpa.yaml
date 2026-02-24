@@ -45,7 +45,7 @@ spec:
             userspaceFallback: false
           strictMode:
             enabled: true
-            cidr: ""
+            cidr: "10.42.0.0/16"
             allowRemoteNodeIdentities: true
 
         # Mutual Authentication (SPIRE)

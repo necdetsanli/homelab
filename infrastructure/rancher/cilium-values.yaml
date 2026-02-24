@@ -51,7 +51,7 @@ encryption:
     userspaceFallback: false
   strictMode:
     enabled: true
-    cidr: ""                     # Auto-detect pod CIDR
+    cidr: "10.42.0.0/16"         # Must match ipv4NativeRoutingCIDR (empty string crashes Cilium)
     allowRemoteNodeIdentities: true  # Required: master opts out of NodeEncryption
 
 # ─── Mutual Authentication (SPIRE) ───────────────────────────────────────────
