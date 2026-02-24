@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: "https://zabbix-community.github.io/helm-zabbix"
     chart: zabbix
-    targetRevision: 4.5.0
+    targetRevision: 7.0.6
     helm:
       releaseName: zabbix
       valuesObject:
@@ -38,8 +38,11 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
-        zabbixAgent2:
+        # In 7.x the key is zabbixAgent (default image is zabbix-agent2).
+        # Runs as a sidecar in the zabbix-server pod.
+        zabbixAgent:
           enabled: true
+          runAsSidecar: true
           resources:
             requests:
               cpu: 10m
@@ -47,13 +50,14 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
-        # Embedded PostgreSQL for Zabbix data
+        # Embedded PostgreSQL for Zabbix data.
+        # 7.x uses storageSize (not size) and relies on the cluster
+        # default StorageClass (longhorn).
         postgresql:
           enabled: true
           persistence:
             enabled: true
-            size: 10Gi
-            storageClassName: longhorn
+            storageSize: 10Gi
           resources:
             requests:
               cpu: 50m
