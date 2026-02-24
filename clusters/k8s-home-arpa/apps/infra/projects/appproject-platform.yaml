@@ -14,18 +14,13 @@ spec:
 
   # Sync windows: auto-sync allowed only during maintenance window (UTC)
   # Manual syncs are always permitted regardless of window.
+  # NOTE: Window temporarily widened during initial observability rollout.
+  #       Restore to 00:00-06:00 UTC once stack is stable.
   syncWindows:
-    # Allow auto-sync daily 00:00-06:00 UTC (03:00-09:00 TR)
+    # Allow auto-sync daily — full day during initial deployment
     - kind: allow
       schedule: "0 0 * * *"
-      duration: 6h
-      applications:
-        - "*"
-      manualSync: true
-    # Deny auto-sync outside the window (catch-all)
-    - kind: deny
-      schedule: "0 6 * * *"
-      duration: 18h
+      duration: 24h
       applications:
         - "*"
       manualSync: true
