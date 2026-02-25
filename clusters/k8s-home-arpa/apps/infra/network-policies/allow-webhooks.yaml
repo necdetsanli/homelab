@@ -119,11 +119,13 @@ spec:
               protocol: TCP
 ---
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Mimir rollout-operator webhook (port 443)
+# Mimir rollout-operator webhook (pod port 8443, Service port 443)
 # Validates: StatefulSet scale-down, pod eviction, zone-aware PDB.
 # This webhook intercepts ALL StatefulSet mutations in the monitoring
 # namespace — including non-Mimir workloads like zabbix-postgresql.
 # Without this rule every StatefulSet sync in monitoring times out.
+# NOTE: CNPs operate at the pod level. The Service listens on 443 but
+# forwards to 8443 on the pod. We must allow the pod port (8443).
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -141,7 +143,7 @@ spec:
         - kube-apiserver
       toPorts:
         - ports:
-            - port: "443"
+            - port: "8443"
               protocol: TCP
 ---
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
