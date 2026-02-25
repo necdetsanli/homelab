@@ -16,8 +16,9 @@ spec:
       config:
         # Disable mmap to comply with PSA restricted (no sysctl required)
         node.store.allow_mmap: false
-        # Single-node discovery
-        discovery.type: single-node
+        # ECK handles discovery automatically for single-node (count: 1).
+        # Do NOT set discovery.type: single-node — it conflicts with
+        # cluster.initial_master_nodes that ECK injects automatically.
         # Disable machine learning (saves ~200MB RAM)
         xpack.ml.enabled: false
       podTemplate:
