@@ -116,10 +116,10 @@ metadata:
   name: opentelemetry
   labels:
     homelab.necdetsanli.io/tier: observability
-    # DaemonSet collector requires hostPath mounts for /proc, /sys metrics
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/warn: restricted
-    pod-security.kubernetes.io/audit: restricted
+    # DaemonSet collector requires hostPath mounts for /proc, /sys host metrics
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 ---
