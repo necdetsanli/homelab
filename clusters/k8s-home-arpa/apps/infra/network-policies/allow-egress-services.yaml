@@ -3,95 +3,9 @@
 # These supplement allow-egress-core.yaml (DNS + API server). Each rule
 # targets the minimum required endpoints, ports, and pod selectors.
 #
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# argocd — intra-namespace + GitHub for git fetch
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
----
-# ArgoCD pods communicate heavily within the namespace:
-#   server ↔ redis, controller ↔ repo-server, applicationset ↔ server, etc.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-egress-intra-namespace
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  endpointSelector: {}
-  egress:
-    - toEndpoints:
-        - {}
----
-# repo-server fetches manifests from GitHub over HTTPS.
-# Uses toFQDNs — Cilium DNS proxy intercepts DNS lookups, learns the
-# FQDN→IP mapping, and allows only the resolved IPs on port 443.
-# Prerequisite: the argocd dns-apiserver CNP must include rules.dns
-# (L7 DNS match) to activate the Cilium DNS proxy; plain L4 DNS
-# allow is not sufficient.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-egress-github
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  endpointSelector:
-    matchLabels:
-      app.kubernetes.io/name: argocd-repo-server
-  egress:
-    - toFQDNs:
-        - matchName: "github.com"
-        - matchName: "api.github.com"
-        # Chart tarball downloads redirect through these CDN domains
-        - matchName: "objects.githubusercontent.com"
-        - matchName: "github-releases.githubusercontent.com"
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
----
-# Helm chart sources — ArgoCD repo-server fetches Helm index + tarballs.
-# ArgoCD repo-server fetches Helm index + tarballs from these registries.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-egress-helm-repos
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  endpointSelector:
-    matchLabels:
-      app.kubernetes.io/name: argocd-repo-server
-  egress:
-    - toFQDNs:
-        # Platform
-        - matchName: "charts.jetstack.io"
-        - matchName: "charts.longhorn.io"
-        - matchName: "helm.releases.hashicorp.com"
-        # Observability
-        - matchName: "grafana.github.io"
-        - matchName: "zabbix-community.github.io"
-        - matchName: "helm.elastic.co"
-        - matchName: "open-telemetry.github.io"
-        - matchName: "jaegertracing.github.io"
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
-    # Fallback: GitHub Pages CIDR — toFQDNs rules depend on Cilium's
-    # DNS proxy cache which can lose FQDN→IP mappings when DNS TTL
-    # expires (Go's resolver may not re-resolve in time).  This CIDR
-    # covers all *.github.io chart registries and charts.longhorn.io
-    # (CNAME → longhorn.github.io).
-    - toCIDR:
-        - "185.199.108.0/22"
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
----
+# NOTE: argocd namespace egress policies (intra-ns, GitHub, Helm repos)
+# live in bootstrap/10-argocd/ to avoid circular dependency.
+#
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # cert-manager — Vault PKI + intra-namespace (webhook ↔ controller)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -348,13 +262,13 @@ spec:
               protocol: TCP
             - port: "9200"
               protocol: TCP
-    # Tempo + Jaeger in tracing namespace
+    # Tempo (query-frontend :3200) + Jaeger (query UI :16686) in tracing namespace
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: tracing
       toPorts:
         - ports:
-            - port: "3100"
+            - port: "3200"
               protocol: TCP
             - port: "16686"
               protocol: TCP

@@ -3,7 +3,11 @@ kind: Kustomization
 
 resources:
   - install.yaml
+  # ArgoCD namespace network policies — applied BEFORE ArgoCD starts.
+  # Prevents circular dependency: ArgoCD must not manage its own network
+  # access, or any CNP breakage creates an unrecoverable deadlock.
+  - argocd-network-policies.yaml
 
-# Optional: allow small, safe patches later (e.g., server service type)
-# patchesStrategicMerge:
-#   - patches/argocd-server-service.yaml
+# Enterprise tuning patches (strategic merge into base manifests)
+patches:
+  - path: patches/argocd-cmd-params.yaml

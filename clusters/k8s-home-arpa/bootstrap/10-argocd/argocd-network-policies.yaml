@@ -1,0 +1,176 @@
+# ArgoCD namespace network policies — bootstrap-managed.
+#
+# CRITICAL DESIGN DECISION: These policies live in the bootstrap path,
+# NOT in the ArgoCD-managed network-policies Application.
+#
+# Why:
+#   ArgoCD needs network access (DNS, GitHub, Helm repos) to function.
+#   If ArgoCD manages its own allow-policies, any network disruption
+#   creates a deadlock: ArgoCD can't sync the policy fix because the
+#   broken policy blocks ArgoCD from reaching its Git/Helm sources.
+#
+#   By placing these in bootstrap, they are applied with:
+#     kubectl apply -k bootstrap/10-argocd/
+#   BEFORE ArgoCD is installed, and independently of ArgoCD's sync loop.
+#
+# Maintenance: when adding new ArgoCD egress targets (e.g., a new Helm
+# registry), update THIS file and re-apply the bootstrap kustomization.
+# Do NOT add argocd-namespace policies to apps/infra/network-policies/.
+#
+# ──────────────────────────────────────────────────────────────────────────
+# Default deny — baseline zero-trust for the argocd namespace
+# ──────────────────────────────────────────────────────────────────────────
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: argocd
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# ──────────────────────────────────────────────────────────────────────────
+# Core: DNS (with L7 DNS proxy) + Kubernetes API server
+# ──────────────────────────────────────────────────────────────────────────
+# NOTE: rules.dns activates Cilium's DNS proxy so that toFQDNs rules
+# below can resolve domain names to IPs.  Without L7 DNS interception,
+# toFQDNs never matches.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-dns-apiserver
+  namespace: argocd
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+---
+# ──────────────────────────────────────────────────────────────────────────
+# Intra-namespace: pod ↔ pod within argocd
+# ──────────────────────────────────────────────────────────────────────────
+# server ↔ redis, controller ↔ repo-server, applicationset ↔ server, etc.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-intra-namespace
+  namespace: argocd
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: argocd
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+---
+# ──────────────────────────────────────────────────────────────────────────
+# GitHub: repo-server fetches manifests from Git over HTTPS
+# ──────────────────────────────────────────────────────────────────────────
+# Wildcard *.githubusercontent.com covers ALL CDN redirect domains:
+#   release-assets.githubusercontent.com  (Helm chart tarballs)
+#   objects.githubusercontent.com         (Git LFS, raw content)
+#   github-releases.githubusercontent.com (GitHub Releases)
+#   raw.githubusercontent.com             (raw file links)
+#   camo.githubusercontent.com            (image proxy)
+# This eliminates redirect-induced policy gaps permanently.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-github
+  namespace: argocd
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  egress:
+    - toFQDNs:
+        - matchName: "github.com"
+        - matchName: "api.github.com"
+        - matchPattern: "*.githubusercontent.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# ──────────────────────────────────────────────────────────────────────────
+# Helm registries: repo-server fetches chart index + tarballs
+# ──────────────────────────────────────────────────────────────────────────
+# GitHub Pages Helm repos (grafana.github.io, etc.) redirect chart tarball
+# downloads to *.githubusercontent.com — covered by the GitHub CNP above.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-helm-repos
+  namespace: argocd
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  egress:
+    - toFQDNs:
+        # Platform
+        - matchName: "charts.jetstack.io"
+        - matchName: "charts.longhorn.io"
+        - matchName: "helm.releases.hashicorp.com"
+        # Observability
+        - matchName: "grafana.github.io"
+        - matchName: "zabbix-community.github.io"
+        - matchName: "helm.elastic.co"
+        - matchName: "open-telemetry.github.io"
+        - matchName: "jaegertracing.github.io"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# ──────────────────────────────────────────────────────────────────────────
+# HAProxy edge ingress: allow health checks + user traffic to argocd-server
+# ──────────────────────────────────────────────────────────────────────────
+# ArgoCD UI uses a direct LoadBalancer (192.168.20.200), not Gateway API.
+# HAProxy on edge-1/edge-2 forwards HTTPS to argocd-server:8080.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-haproxy-to-argocd
+  namespace: argocd
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  ingress:
+    - fromCIDR:
+        - 192.168.20.20/32
+        - 192.168.20.21/32
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

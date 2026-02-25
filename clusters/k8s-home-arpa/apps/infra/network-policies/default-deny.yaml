@@ -10,19 +10,8 @@
 #
 # Egress allow rules use CiliumNetworkPolicy (identity-based, L7-aware).
 # The deny baseline uses Kubernetes NetworkPolicy (CNI-agnostic, auditable).
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  podSelector: {}
-  policyTypes:
-    - Ingress
-    - Egress
+# NOTE: argocd namespace default-deny lives in bootstrap/10-argocd/
+# to avoid circular dependency (ArgoCD managing its own network access).
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

@@ -1,0 +1,13 @@
+# Enterprise tuning for ArgoCD operational parameters.
+# Patched via Kustomize strategic merge into the base install.yaml.
+# ---
+# reposerver.timeout.seconds: Large Helm charts (Grafana 10.x, Mimir 6.x,
+#   ECK 3.x) can exceed the 60-second default during template rendering.
+#   300s prevents spurious DeadlineExceeded errors on manifest generation.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+data:
+  reposerver.timeout.seconds: "300"

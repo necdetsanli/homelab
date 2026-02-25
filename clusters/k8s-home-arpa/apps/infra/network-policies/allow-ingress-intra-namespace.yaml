@@ -7,21 +7,7 @@
 # even though egress is permitted.
 #
 # Pattern: one CiliumNetworkPolicy per managed namespace, sync-wave -1.
----
-# ── argocd ──────────────────────────────────────────────────────────────────
-# server ↔ redis, controller ↔ repo-server, applicationset ↔ server, etc.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-ingress-intra-namespace
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  endpointSelector: {}
-  ingress:
-    - fromEndpoints:
-        - {}
+# NOTE: argocd namespace ingress lives in bootstrap/10-argocd/.
 ---
 # ── cert-manager ────────────────────────────────────────────────────────────
 # webhook ↔ controller, cainjector ↔ controller
