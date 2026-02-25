@@ -1,6 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# All resources from install.yaml are namespace-less.
+# This ensures they are applied to the argocd namespace.
+namespace: argocd
+
 resources:
   - install.yaml
   # ArgoCD namespace network policies — applied BEFORE ArgoCD starts.
