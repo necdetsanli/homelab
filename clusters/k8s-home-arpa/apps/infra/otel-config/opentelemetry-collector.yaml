@@ -97,9 +97,9 @@ spec:
         endpoint: tempo.tracing.svc.cluster.local:4317
         tls:
           insecure: true
-      # Traces -> Jaeger via OTLP gRPC (all-in-one)
+      # Traces -> Jaeger via OTLP gRPC (unified service in chart 4.x)
       otlp/jaeger:
-        endpoint: jaeger-all-in-one.tracing.svc.cluster.local:4317
+        endpoint: jaeger.tracing.svc.cluster.local:4317
         tls:
           insecure: true
     service:

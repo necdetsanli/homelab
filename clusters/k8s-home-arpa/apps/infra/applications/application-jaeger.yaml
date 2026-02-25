@@ -15,13 +15,18 @@ spec:
   source:
     repoURL: "https://jaegertracing.github.io/helm-charts"
     chart: jaeger
-    targetRevision: 3.3.1
+    targetRevision: 4.4.6
     helm:
       releaseName: jaeger
       valuesObject:
-        # All-in-one mode: single pod with collector + query + agent
-        allInOne:
-          enabled: true
+        # Jaeger v2 (chart 4.x) — unified All-In-One binary built on the
+        # OTEL Collector framework. In-memory storage is the default;
+        # traces are lost on pod restart.  For persistence, configure an
+        # ES backend via config.extensions.jaeger_storage.
+        #
+        # The unified Service exposes: Query UI (16686), OTLP (4317/4318),
+        # Jaeger (14250/14268), Zipkin (9411).
+        jaeger:
           resources:
             requests:
               cpu: 50m
@@ -29,22 +34,6 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-        # In-memory storage — traces lost on pod restart.
-        # For persistence, configure ES backend:
-        #   storage.type: elasticsearch
-        #   storage.elasticsearch.host: homelab-es-http.logging.svc
-        storage:
-          type: memory
-        # Data store provisioning — disable (we manage ES separately via ECK)
-        provisionDataStore:
-          cassandra: false
-        # Disable separate components (all-in-one handles everything)
-        collector:
-          enabled: false
-        query:
-          enabled: false
-        agent:
-          enabled: false
   destination:
     server: "https://kubernetes.default.svc"
     namespace: tracing

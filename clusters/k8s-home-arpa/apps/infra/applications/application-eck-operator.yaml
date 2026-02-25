@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: "https://helm.elastic.co"
     chart: eck-operator
-    targetRevision: 2.14.0
+    targetRevision: 3.3.0
     helm:
       releaseName: eck-operator
       valuesObject:

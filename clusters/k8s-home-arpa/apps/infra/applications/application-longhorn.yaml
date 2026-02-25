@@ -10,7 +10,10 @@ spec:
   source:
     repoURL: "https://charts.longhorn.io"
     chart: longhorn
-    targetRevision: 1.7.2
+    # Longhorn only supports 1-minor-version upgrades.
+    # Upgrade path: 1.7.2 -> 1.8.1 -> 1.9.x -> 1.10.x -> 1.11.0
+    # Bump this one minor version at a time; wait for Healthy before proceeding.
+    targetRevision: 1.8.1
     helm:
       releaseName: longhorn
       valuesObject:

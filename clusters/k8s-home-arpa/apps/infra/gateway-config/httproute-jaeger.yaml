@@ -24,6 +24,6 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: jaeger-all-in-one
+          name: jaeger
           port: 16686
           weight: 1

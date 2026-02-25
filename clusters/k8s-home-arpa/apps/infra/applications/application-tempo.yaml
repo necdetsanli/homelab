@@ -1,7 +1,7 @@
 # Tempo — distributed tracing backend for the LGTM stack.
 # Single binary mode for homelab efficiency.
 # Receives traces from OpenTelemetry Collector via OTLP.
-# Grafana queries Tempo via HTTP API (port 3100).
+# Grafana queries Tempo via HTTP API (port 3200).
 # Also exposes Jaeger-compatible query API for interoperability.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: "https://grafana.github.io/helm-charts"
     chart: tempo
-    targetRevision: 1.12.0
+    targetRevision: 1.24.4
     helm:
       releaseName: tempo
       valuesObject:

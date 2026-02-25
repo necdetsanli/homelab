@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: "https://grafana.github.io/helm-charts"
     chart: grafana
-    targetRevision: 8.6.4
+    targetRevision: 10.5.15
     helm:
       releaseName: grafana
       valuesObject:
@@ -42,7 +42,7 @@ spec:
                 access: proxy
               - name: Tempo
                 type: tempo
-                url: http://tempo.tracing.svc.cluster.local:3100
+                url: http://tempo.tracing.svc.cluster.local:3200
                 access: proxy
                 jsonData:
                   tracesToLogsV2:
@@ -55,7 +55,7 @@ spec:
                     datasourceUid: mimir
               - name: Jaeger
                 type: jaeger
-                url: http://jaeger-query.tracing.svc.cluster.local:16686
+                url: http://jaeger.tracing.svc.cluster.local:16686
                 access: proxy
               - name: Elasticsearch
                 type: elasticsearch

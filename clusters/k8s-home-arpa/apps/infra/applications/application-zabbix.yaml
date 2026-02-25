@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: "https://zabbix-community.github.io/helm-zabbix"
     chart: zabbix
-    targetRevision: 7.0.6
+    targetRevision: 7.0.12
     helm:
       releaseName: zabbix
       valuesObject:
