@@ -91,3 +91,81 @@ spec:
   ingress:
     - fromEndpoints:
         - {}
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# OpenTelemetry operator webhook (port 9443)
+# Validates/Mutates: OpenTelemetryCollector, Instrumentation, etc.
+# Without this rule the default-deny NetworkPolicy blocks API server →
+# webhook traffic, causing "context deadline exceeded" on every
+# OpenTelemetryCollector create/update.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-apiserver-webhook
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: opentelemetry-operator
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "9443"
+              protocol: TCP
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Mimir rollout-operator webhook (port 443)
+# Validates: StatefulSet scale-down, pod eviction, zone-aware PDB.
+# This webhook intercepts ALL StatefulSet mutations in the monitoring
+# namespace — including non-Mimir workloads like zabbix-postgresql.
+# Without this rule every StatefulSet sync in monitoring times out.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-apiserver-rollout-operator-webhook
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: rollout-operator
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ECK operator webhook (port 9443)
+# Validates: Elasticsearch, Kibana, Agent, Beat, EnterpriseSearch, etc.
+# The ECK operator registers a ValidatingWebhookConfiguration
+# (elastic-webhook.k8s.elastic.co) that intercepts all Elastic CRD
+# mutations. Without this rule, ES cluster creation/updates are blocked.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-apiserver-webhook
+  namespace: elastic-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      control-plane: elastic-operator
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "9443"
+              protocol: TCP
