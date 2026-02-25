@@ -43,6 +43,9 @@ spec:
     - toFQDNs:
         - matchName: "github.com"
         - matchName: "api.github.com"
+        # Chart tarball downloads redirect through these CDN domains
+        - matchName: "objects.githubusercontent.com"
+        - matchName: "github-releases.githubusercontent.com"
       toPorts:
         - ports:
             - port: "443"
@@ -73,6 +76,17 @@ spec:
         - matchName: "helm.elastic.co"
         - matchName: "open-telemetry.github.io"
         - matchName: "jaegertracing.github.io"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Fallback: GitHub Pages CIDR — toFQDNs rules depend on Cilium's
+    # DNS proxy cache which can lose FQDN→IP mappings when DNS TTL
+    # expires (Go's resolver may not re-resolve in time).  This CIDR
+    # covers all *.github.io chart registries and charts.longhorn.io
+    # (CNAME → longhorn.github.io).
+    - toCIDR:
+        - "185.199.108.0/22"
       toPorts:
         - ports:
             - port: "443"

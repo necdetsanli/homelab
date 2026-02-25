@@ -52,10 +52,15 @@ spec:
             enabled: true
             size: 10Gi
             storageClassName: longhorn
-        # Nginx gateway — single API endpoint
+        # Nginx gateway — single API endpoint.
+        # resolver must be the CoreDNS ClusterIP; the default
+        # kube-dns.kube-system.svc.cluster.local hostname fails
+        # because nginx resolves it at startup (not via k8s DNS).
         gateway:
           enabled: true
           replicas: 1
+          nginx:
+            resolver: "10.43.0.10"
           resources:
             requests:
               cpu: 10m
