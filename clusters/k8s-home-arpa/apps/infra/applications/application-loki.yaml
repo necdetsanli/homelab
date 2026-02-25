@@ -59,7 +59,7 @@ spec:
         gateway:
           enabled: true
           replicas: 1
-          nginx:
+          nginxConfig:
             resolver: "10.43.0.10"
           resources:
             requests:

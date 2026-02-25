@@ -58,7 +58,8 @@ spec:
           enabledNonEnterprise: true
           replicas: 1
           nginx:
-            resolver: "10.43.0.10"
+            config:
+              resolver: "10.43.0.10"
           resources:
             requests:
               cpu: 10m
