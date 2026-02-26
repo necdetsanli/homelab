@@ -1,11 +1,11 @@
 # Mimir — long-term metrics storage backend for the LGTM stack.
-# Deployed in monolithic mode (single process) for homelab efficiency.
+# Deployed as single-replica distributed (all components × 1 pod).
 # Receives metrics from OpenTelemetry Collector via OTLP.
-# Grafana queries Mimir via the gateway at /prometheus endpoint.
-# Embedded MinIO provides S3-compatible object storage.
+# Grafana queries Mimir via the nginx gateway at /prometheus endpoint.
+# Embedded MinIO provides S3-compatible object storage on NFS.
 #
-# NOTE: Chart 6.x weekly builds dropped monolithic mode. Using stable
-# 5.5.1 which fully supports deploymentMode: monolithic.
+# NOTE: mimir-distributed chart has no monolithic mode. Using 5.5.1 with
+# 1 replica per component for minimal homelab footprint.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -22,45 +22,28 @@ spec:
     helm:
       releaseName: mimir
       valuesObject:
-        # Global DNS resolver override — chart default uses the kube-dns
-        # hostname which nginx can't resolve at startup. Use CoreDNS ClusterIP.
-        global:
-          dnsResolver: "10.43.0.10"
-        # Monolithic mode: all Mimir components in a single process.
-        # Drastically reduces resource usage vs distributed microservices.
-        # Suitable for homelab with < 100K active series.
-        deploymentMode: monolithic
+        # Mimir config — single-replica distributed mode.
+        # Chart 5.5.1 does NOT support monolithic mode (no deploymentMode key).
+        # We run 1 replica of each required component for homelab efficiency.
         mimir:
           structuredConfig:
             multitenancy_enabled: false
             limits:
               max_global_series_per_user: 500000
               ingestion_rate: 10000
-        monolithic:
-          replicas: 1
-          resources:
-            requests:
-              cpu: 100m
-              memory: 512Mi
-            limits:
-              cpu: 1
-              memory: 1536Mi
-          persistence:
-            enabled: true
-            size: 10Gi
-            storageClass: nfs
         # Embedded MinIO for S3-compatible object storage (required by Mimir)
         minio:
           enabled: true
           persistence:
             storageClass: nfs
         # Nginx reverse-proxy — single API endpoint for Grafana + OTel.
-        # Chart 5.x uses the "nginx" section (not "gateway").
         # resolver must be the CoreDNS ClusterIP; default hostname fails
         # because nginx resolves at startup before kube-dns is reachable.
         nginx:
           enabled: true
           replicas: 1
+          nginxConfig:
+            resolver: "10.43.0.10"
           resources:
             requests:
               cpu: 10m
@@ -68,20 +51,32 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
-        # Disable distributed components (monolithic mode handles everything)
+        # Single-replica distributed components
         ingester:
-          replicas: 0
+          replicas: 1
+          zoneAwareReplication:
+            enabled: false
+          persistentVolume:
+            storageClass: nfs
         distributor:
-          replicas: 0
+          replicas: 1
         querier:
-          replicas: 0
+          replicas: 1
         query_frontend:
-          replicas: 0
+          replicas: 1
         compactor:
-          replicas: 0
+          replicas: 1
+          persistentVolume:
+            storageClass: nfs
         store_gateway:
-          replicas: 0
-        # Disable optional sub-charts
+          replicas: 1
+          zoneAwareReplication:
+            enabled: false
+          persistentVolume:
+            storageClass: nfs
+        # Optional components — disabled for homelab
+        query_scheduler:
+          enabled: false
         overrides_exporter:
           replicas: 0
         ruler:
