@@ -25,8 +25,9 @@ spec:
         defaultSettings:
           # 2 worker nodes — replica count must match
           defaultReplicaCount: 2
-          # Allow overprovisioning (sum of PVC requests can exceed physical capacity)
-          storageOverProvisioningPercentage: 100
+          # Allow overprovisioning — 200% means sum of PVC requests can be 2x physical capacity.
+          # Needed on 2-node homelab where each node has ~40GB but total PVC requests exceed that.
+          storageOverProvisioningPercentage: 200
           # Keep 15% disk free as safety margin
           storageMinimalAvailablePercentage: 15
         # v1.11.0 moved backup settings from defaultSettings to defaultBackupStore
