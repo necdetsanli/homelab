@@ -47,7 +47,7 @@ spec:
           persistence:
             enabled: true
             size: 10Gi
-            storageClassName: nfs
+            storageClass: nfs
         # Embedded MinIO for S3-compatible object storage (required by Mimir)
         minio:
           enabled: true
