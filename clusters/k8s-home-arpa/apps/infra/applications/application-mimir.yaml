@@ -22,6 +22,10 @@ spec:
     helm:
       releaseName: mimir
       valuesObject:
+        # Global DNS resolver override — chart default uses the kube-dns
+        # hostname which nginx can't resolve at startup. Use CoreDNS ClusterIP.
+        global:
+          dnsResolver: "10.43.0.10"
         # Monolithic mode: all Mimir components in a single process.
         # Drastically reduces resource usage vs distributed microservices.
         # Suitable for homelab with < 100K active series.
@@ -57,8 +61,6 @@ spec:
         nginx:
           enabled: true
           replicas: 1
-          nginxConfig:
-            resolver: "10.43.0.10"
           resources:
             requests:
               cpu: 10m
