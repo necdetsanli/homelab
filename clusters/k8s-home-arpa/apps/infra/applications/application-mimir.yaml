@@ -57,7 +57,8 @@ spec:
         nginx:
           enabled: true
           replicas: 1
-          resolver: "10.43.0.10"
+          nginxConfig:
+            resolver: "10.43.0.10"
           resources:
             requests:
               cpu: 10m
