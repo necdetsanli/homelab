@@ -141,6 +141,7 @@ spec:
         - matchName: "charts.jetstack.io"
         - matchName: "charts.longhorn.io"
         - matchName: "helm.releases.hashicorp.com"
+        - matchName: "kubernetes-sigs.github.io"
         # Observability
         - matchName: "grafana.github.io"
         - matchName: "zabbix-community.github.io"
