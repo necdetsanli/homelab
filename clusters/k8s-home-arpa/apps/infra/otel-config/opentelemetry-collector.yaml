@@ -23,8 +23,10 @@ metadata:
   namespace: opentelemetry
 spec:
   mode: daemonset
-  # Use contrib image for elasticsearch exporter and additional receivers
-  image: otel/opentelemetry-collector-contrib:0.115.0
+  # The operator auto-selects the collector image+tag based on its own version.
+  # The contrib variant is configured via collectorImage.repository in the
+  # operator Helm values (application-otel-operator.yaml).
+  # Do NOT hardcode image: here — it breaks when tags are removed from Docker Hub.
   resources:
     requests:
       cpu: 50m
