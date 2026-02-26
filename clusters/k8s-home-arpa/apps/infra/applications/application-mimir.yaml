@@ -50,15 +50,14 @@ spec:
           enabled: true
           persistence:
             storageClass: nfs
-        # Nginx gateway — single API endpoint for Grafana + OTel Collector.
-        # resolver must be the CoreDNS ClusterIP (standard nginx does not
-        # accept hostnames in the resolver directive).
-        gateway:
-          enabledNonEnterprise: true
+        # Nginx reverse-proxy — single API endpoint for Grafana + OTel.
+        # Chart 5.x uses the "nginx" section (not "gateway").
+        # resolver must be the CoreDNS ClusterIP; default hostname fails
+        # because nginx resolves at startup before kube-dns is reachable.
+        nginx:
+          enabled: true
           replicas: 1
-          nginx:
-            config:
-              resolver: "10.43.0.10"
+          resolver: "10.43.0.10"
           resources:
             requests:
               cpu: 10m
