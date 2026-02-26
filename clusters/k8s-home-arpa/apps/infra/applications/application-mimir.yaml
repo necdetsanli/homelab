@@ -3,6 +3,9 @@
 # Receives metrics from OpenTelemetry Collector via OTLP.
 # Grafana queries Mimir via the gateway at /prometheus endpoint.
 # Embedded MinIO provides S3-compatible object storage.
+#
+# NOTE: Chart 6.x weekly builds dropped monolithic mode. Using stable
+# 5.5.1 which fully supports deploymentMode: monolithic.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,7 +18,7 @@ spec:
   source:
     repoURL: "https://grafana.github.io/helm-charts"
     chart: mimir-distributed
-    targetRevision: 6.1.0-weekly.383
+    targetRevision: 5.5.1
     helm:
       releaseName: mimir
       valuesObject:
@@ -26,12 +29,6 @@ spec:
         mimir:
           structuredConfig:
             multitenancy_enabled: false
-            # Chart 6.x enables ingest-storage + Kafka by default.
-            # Disable for classic architecture (no Kafka needed).
-            ingest_storage:
-              enabled: false
-            ingester:
-              push_grpc_method_enabled: true
             limits:
               max_global_series_per_user: 500000
               ingestion_rate: 10000
@@ -69,11 +66,6 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
-        # Top-level nginx section removed in chart 6.0; the gateway is the
-        # only reverse-proxy layer.
-        # Disable Kafka (not needed for classic architecture).
-        kafka:
-          enabled: false
         # Disable distributed components (monolithic mode handles everything)
         ingester:
           replicas: 0
