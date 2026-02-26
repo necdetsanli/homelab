@@ -9,6 +9,7 @@ resources:
   - application-vso.yaml
   - application-vso-config.yaml
   - application-longhorn.yaml
+  - application-nfs-provisioner.yaml
   - application-gateway-api.yaml
   - application-gateway-config.yaml
   - application-network-policies.yaml

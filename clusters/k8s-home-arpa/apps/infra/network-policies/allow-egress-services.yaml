@@ -432,3 +432,31 @@ spec:
               protocol: TCP
             - port: "5601"
               protocol: TCP
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# nfs-storage — NFS provisioner → TrueNAS NFS server
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+# NFS provisioner needs to mount/unmount NFS shares on TrueNAS.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-nfs
+  namespace: nfs-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toCIDR:
+        - "192.168.20.50/32"
+      toPorts:
+        - ports:
+            - port: "2049"
+              protocol: TCP
+            - port: "2049"
+              protocol: UDP
+            - port: "111"
+              protocol: TCP
+            - port: "111"
+              protocol: UDP

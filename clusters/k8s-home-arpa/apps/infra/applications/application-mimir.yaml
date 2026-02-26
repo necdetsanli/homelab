@@ -47,10 +47,12 @@ spec:
           persistence:
             enabled: true
             size: 10Gi
-            storageClassName: longhorn
+            storageClassName: nfs
         # Embedded MinIO for S3-compatible object storage (required by Mimir)
         minio:
           enabled: true
+          persistence:
+            storageClass: nfs
         # Nginx gateway — single API endpoint for Grafana + OTel Collector.
         # resolver must be the CoreDNS ClusterIP (standard nginx does not
         # accept hostnames in the resolver directive).

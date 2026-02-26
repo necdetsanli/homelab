@@ -36,6 +36,7 @@ spec:
     - "https://helm.elastic.co"
     - "https://open-telemetry.github.io/opentelemetry-helm-charts"
     - "https://jaegertracing.github.io/helm-charts"
+    - "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner"
 
   destinations:
     - server: "https://kubernetes.default.svc"
@@ -65,6 +66,8 @@ spec:
       namespace: "opentelemetry"
     - server: "https://kubernetes.default.svc"
       namespace: "elastic-system"
+    - server: "https://kubernetes.default.svc"
+      namespace: "nfs-storage"
 
   # Cluster-scoped resources: strict allow-list
   clusterResourceWhitelist:

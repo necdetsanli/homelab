@@ -51,7 +51,7 @@ spec:
           persistence:
             enabled: true
             size: 10Gi
-            storageClassName: longhorn
+            storageClassName: nfs
         # Nginx gateway — single API endpoint.
         # resolver must be the CoreDNS ClusterIP; the default
         # kube-dns.kube-system.svc.cluster.local hostname fails

@@ -171,3 +171,18 @@ spec:
   ingress:
     - fromEndpoints:
         - {}
+---
+# ── nfs-storage ─────────────────────────────────────────────────────────────
+# NFS provisioner (single pod, but following established pattern)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-intra-namespace
+  namespace: nfs-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}

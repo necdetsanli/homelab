@@ -137,6 +137,18 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-storage
+  labels:
+    homelab.necdetsanli.io/tier: platform
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
 # kube-system label overlay — adds gateway-access for Hubble UI HTTPRoute.
 # kube-system is a built-in namespace; ServerSideApply merges these labels
 # without touching existing ownership.

@@ -25,7 +25,7 @@ spec:
         persistence:
           enabled: true
           size: 5Gi
-          storageClassName: longhorn
+          storageClassName: nfs
         # Pre-configured datasources for the full observability stack
         datasources:
           datasources.yaml:

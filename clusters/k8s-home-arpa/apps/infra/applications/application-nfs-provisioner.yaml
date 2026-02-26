@@ -1,0 +1,52 @@
+# NFS Subdir External Provisioner — dynamic PVC provisioning on TrueNAS NFS.
+# Creates subdirectories under the NFS export for each PVC.
+# Used for workloads that don't need local-disk IOPS (logs, metrics, dashboards).
+# Databases (PostgreSQL, Elasticsearch) stay on Longhorn for fsync performance.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nfs-provisioner
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner"
+    chart: nfs-subdir-external-provisioner
+    targetRevision: 4.0.18
+    helm:
+      releaseName: nfs-provisioner
+      valuesObject:
+        nfs:
+          server: "192.168.20.50"
+          path: "/mnt/fast/longhorn"
+        storageClass:
+          name: nfs
+          defaultClass: false
+          reclaimPolicy: Retain
+          archiveOnDelete: true
+          accessModes: ReadWriteOnce
+        # Homelab-sized resource limits
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: nfs-storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=false

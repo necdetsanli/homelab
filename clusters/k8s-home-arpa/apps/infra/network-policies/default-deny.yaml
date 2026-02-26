@@ -163,3 +163,17 @@ spec:
   policyTypes:
     - Ingress
     - Egress
+---
+# nfs-storage: NFS subdir external provisioner.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: nfs-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
