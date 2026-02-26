@@ -10,10 +10,11 @@ spec:
   source:
     repoURL: "https://charts.longhorn.io"
     chart: longhorn
-    # Longhorn only supports 1-minor-version upgrades.
-    # Upgrade path: 1.7.2 -> 1.8.1 -> 1.9.x -> 1.10.x -> 1.11.0
-    # Bump this one minor version at a time; wait for Healthy before proceeding.
-    targetRevision: 1.8.1
+    # Longhorn v1.11.0 — latest major release.
+    # Hotfix images applied for known regressions:
+    #   manager:          v1.11.0-hotfix-1 (webhook deadlock #12578)
+    #   instance-manager: v1.11.0-hotfix-1 (proxy connection leak #12573)
+    targetRevision: 1.11.0
     helm:
       releaseName: longhorn
       valuesObject:
@@ -28,12 +29,23 @@ spec:
           storageOverProvisioningPercentage: 100
           # Keep 15% disk free as safety margin
           storageMinimalAvailablePercentage: 15
+        # v1.11.0 moved backup settings from defaultSettings to defaultBackupStore
+        defaultBackupStore:
           # TrueNAS NFS backup target — off-cluster disaster recovery
           backupTarget: "nfs://192.168.20.50:/mnt/tank/backups/longhorn"
           backupTargetCredentialSecret: ""
         preUpgradeChecker:
           # Disable pre-upgrade hook -- causes SA-not-found on fresh install via ArgoCD
           jobEnabled: false
+          # Skip upgrade version check — fresh install, no migration needed
+          upgradeVersionCheck: false
+        # Hotfix images — override default v1.11.0 tags with patched builds
+        image:
+          longhorn:
+            manager:
+              tag: v1.11.0-hotfix-1
+            instanceManager:
+              tag: v1.11.0-hotfix-1
         # Resource limits -- right-sized for homelab (2 worker nodes)
         longhornManager:
           resources:
