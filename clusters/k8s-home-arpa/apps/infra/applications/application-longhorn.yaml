@@ -11,9 +11,7 @@ spec:
     repoURL: "https://charts.longhorn.io"
     chart: longhorn
     # Longhorn v1.11.0 — latest major release.
-    # Hotfix images applied for known regressions:
-    #   manager:          v1.11.0-hotfix-1 (webhook deadlock #12578)
-    #   instance-manager: v1.11.0-hotfix-1 (proxy connection leak #12573)
+    # Using vanilla v1.11.0 images (see NOTE below re: hotfix regression).
     targetRevision: 1.11.0
     helm:
       releaseName: longhorn
@@ -40,13 +38,12 @@ spec:
           jobEnabled: false
           # Skip upgrade version check — fresh install, no migration needed
           upgradeVersionCheck: false
-        # Hotfix images — override default v1.11.0 tags with patched builds
-        image:
-          longhorn:
-            manager:
-              tag: v1.11.0-hotfix-1
-            instanceManager:
-              tag: v1.11.0-hotfix-1
+        # NOTE: v1.11.0-hotfix-1 images removed — the hotfix added a
+        # rebuildConcurrentSyncLimit feature to the manager/instance-manager
+        # but the chart v1.11.0 CRDs don't include the field in the Engine
+        # spec schema. Kubernetes prunes the unknown field, causing ALL
+        # engine processes to receive --rebuild-sync-concurrent-limit=0
+        # and crash. Use vanilla v1.11.0 images until chart is updated.
         # Resource limits -- right-sized for homelab (2 worker nodes)
         longhornManager:
           resources:
