@@ -68,6 +68,16 @@ spec:
   destination:
     server: "https://kubernetes.default.svc"
     namespace: monitoring
+  ignoreDifferences:
+    # API server injects volumeMode + status into VolumeClaimTemplates.
+    # These cause permanent OutOfSync with SSA because the Helm chart
+    # doesn't include them and StatefulSet VCT is immutable.
+    - group: apps
+      kind: StatefulSet
+      name: zabbix-postgresql
+      jqPathExpressions:
+        - .spec.volumeClaimTemplates[].spec.volumeMode
+        - .spec.volumeClaimTemplates[].status
   syncPolicy:
     automated:
       prune: true
@@ -81,3 +91,4 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false
+      - RespectIgnoreDifferences=true
