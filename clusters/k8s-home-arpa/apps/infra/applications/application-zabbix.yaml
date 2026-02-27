@@ -72,12 +72,13 @@ spec:
     # API server injects volumeMode + status into VolumeClaimTemplates.
     # These cause permanent OutOfSync with SSA because the Helm chart
     # doesn't include them and StatefulSet VCT is immutable.
+    # Ignore the entire VCT array — individual field ignores aren't
+    # sufficient for SSA sync-status calculation.
     - group: apps
       kind: StatefulSet
       name: zabbix-postgresql
       jqPathExpressions:
-        - .spec.volumeClaimTemplates[].spec.volumeMode
-        - .spec.volumeClaimTemplates[].status
+        - .spec.volumeClaimTemplates
   syncPolicy:
     automated:
       prune: true
