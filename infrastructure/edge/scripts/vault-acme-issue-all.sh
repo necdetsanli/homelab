@@ -195,7 +195,7 @@ issue_and_deploy() {
     --manual-auth-hook "${AUTH_HOOK}" \
     --manual-cleanup-hook "${CLEAN_HOOK}" \
     --server "${acme_dir}" \
-    --key-type rsa --rsa-key-size 2048 \
+    --key-type rsa --rsa-key-size 4096 \
     --non-interactive \
     --keep-until-expiring \
     -d "${domain}"; then
