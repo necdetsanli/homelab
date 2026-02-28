@@ -19,6 +19,9 @@ spec:
     path: "clusters/k8s-home-arpa/apps/infra/resource-governance"
   destination:
     server: "https://kubernetes.default.svc"
+    # LimitRanges span multiple namespaces (set per-resource in YAML).
+    # This default satisfies the AppProject destination requirement.
+    namespace: "argocd"
   syncPolicy:
     automated:
       prune: true
