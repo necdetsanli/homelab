@@ -13,6 +13,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: platform
   source:
@@ -97,4 +99,5 @@ spec:
         factor: 2
         maxDuration: 3m
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=false

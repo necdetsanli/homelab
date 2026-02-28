@@ -6,3 +6,5 @@ resources:
   - vault-connection.yaml
   - vault-auth.yaml
   - vault-static-secret-test.yaml
+  - vault-static-secret-grafana.yaml
+  - vault-static-secret-jaeger-es.yaml

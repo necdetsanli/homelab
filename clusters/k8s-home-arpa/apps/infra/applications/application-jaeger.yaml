@@ -1,8 +1,18 @@
 # Jaeger — distributed tracing UI and collector.
 # All-in-one mode: collector + query + agent in a single pod.
 # Receives traces from OpenTelemetry Collector via OTLP (port 4317).
-# In-memory storage for homelab; upgrade to ES backend for persistence.
+# Persistent storage via Elasticsearch (ECK, logging namespace).
 # Exposed via Gateway API at jaeger.mgmt.home.arpa.
+#
+# Data flow:
+#   OTel Collector → OTLP gRPC :4317 → Jaeger → Elasticsearch (9200)
+#   Jaeger Query UI (:16686) → reads from Elasticsearch
+#   Grafana Jaeger datasource → Jaeger Query API (:16686)
+#
+# ES credentials managed by VSO:
+#   Vault path: secret/tracing/jaeger-es
+#   K8s Secret: jaeger-es-credentials (tracing namespace)
+#   See: vso-config/vault-static-secret-jaeger-es.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -10,6 +20,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: platform
   source:
@@ -20,13 +32,38 @@ spec:
       releaseName: jaeger
       valuesObject:
         # Jaeger v2 (chart 4.x) — unified All-In-One binary built on the
-        # OTEL Collector framework. In-memory storage is the default;
-        # traces are lost on pod restart.  For persistence, configure an
-        # ES backend via config.extensions.jaeger_storage.
+        # OTEL Collector framework.  Storage: Elasticsearch 8.16.0 (ECK)
+        # in the logging namespace for persistent, searchable traces.
         #
         # The unified Service exposes: Query UI (16686), OTLP (4317/4318),
         # Jaeger (14250/14268), Zipkin (9411).
+        #
+        # ES credentials injected via environment variables from VSO-managed
+        # Secret (jaeger-es-credentials). TLS verified against the Vault root CA
+        # (vault-ca-bundle Secret, distributed by vault-ca-bundle/tracing overlay).
+        # The CA is mounted at /etc/jaeger/tls/ca.crt inside the Jaeger pod.
         jaeger:
+          # ES credentials from Vault via VSO
+          extraEnv:
+            - name: ES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: jaeger-es-credentials
+                  key: es-username
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jaeger-es-credentials
+                  key: es-password
+          # Mount the Vault root CA for Elasticsearch TLS verification
+          extraVolumes:
+            - name: vault-ca-bundle
+              secret:
+                secretName: vault-ca-bundle
+          extraVolumeMounts:
+            - name: vault-ca-bundle
+              mountPath: /etc/jaeger/tls
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -34,6 +71,26 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          config:
+            extensions:
+              jaeger_storage:
+                backends:
+                  es_main:
+                    elasticsearch:
+                      index_prefix: "jaeger"
+                      server_urls: "https://homelab-es-http.logging.svc.cluster.local:9200"
+                      tls:
+                        ca_file: "/etc/jaeger/tls/ca.crt"
+                      username: "${ES_USERNAME}"
+                      password: "${ES_PASSWORD}"
+                      log_level: "info"
+              jaeger_query:
+                storage:
+                  traces: es_main
+            service:
+              extensions:
+                - jaeger_storage
+                - jaeger_query
   destination:
     server: "https://kubernetes.default.svc"
     namespace: tracing

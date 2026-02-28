@@ -1,3 +1,15 @@
+# cert-manager post-install configuration: Vault PKI ClusterIssuer,
+# ArgoCD TLS certificate, and Vault auth reviewer ServiceAccount.
+#
+# Resources span multiple scopes:
+#   - kube-system:   vault-auth-reviewer SA + Secret (for Vault K8s auth)
+#   - cluster-wide:  ClusterIssuer, ClusterRoleBinding
+#   - argocd:        Certificate (argocd-server-tls)
+#
+# Destination namespace is "argocd" because the primary consumer-facing
+# resource (the Certificate) lives there.  With ServerSideApply=true,
+# each resource's metadata.namespace is authoritative — ArgoCD does NOT
+# override kube-system resources into argocd.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -5,6 +17,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: platform
   source:

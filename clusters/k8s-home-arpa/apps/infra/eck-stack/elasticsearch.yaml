@@ -10,6 +10,13 @@ metadata:
   namespace: logging
 spec:
   version: 8.16.0
+  # Use Vault PKI cert instead of ECK self-signed CA.
+  # cert-manager issues the cert via ClusterIssuer "vault-pki".
+  # This allows all clients (Grafana, Jaeger) to trust the same Vault root CA.
+  http:
+    tls:
+      certificate:
+        secretName: elasticsearch-tls
   nodeSets:
     - name: default
       count: 1

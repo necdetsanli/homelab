@@ -13,6 +13,8 @@ resources:
   - application-gateway-api.yaml
   - application-gateway-config.yaml
   - application-network-policies.yaml
+  - application-resource-governance.yaml
+  - application-pdb.yaml
   # Observability: LGTM stack
   - application-grafana.yaml
   - application-mimir.yaml

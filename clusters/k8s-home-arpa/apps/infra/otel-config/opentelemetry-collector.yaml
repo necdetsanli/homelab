@@ -6,15 +6,16 @@
 #     Logs     -> Loki  (OTLP HTTP)
 #     Traces   -> Tempo  (OTLP gRPC) + Jaeger (OTLP gRPC)
 #
+#   Prometheus receiver (pull-based) scrapes:
+#     Cilium Agent  (:9962)  — network dataplane metrics
+#     Hubble        (:9965)  — L3/L4/L7 flow observability
+#     CoreDNS       (:9153)  — DNS resolution metrics
+#
 # DaemonSet ensures one collector per node for host metrics collection.
 # Applications send OTLP to: otel-collector.opentelemetry.svc:4317 (gRPC)
 #                          or otel-collector.opentelemetry.svc:4318 (HTTP)
 #
-# To add container log collection, enable the filelog receiver:
-#   filelog:
-#     include: ["/var/log/containers/*.log"]
-#     exclude: ["/var/log/containers/otel-collector*.log"]
-# and mount /var/log as hostPath volume.
+# Prometheus SD RBAC: see prometheus-rbac.yaml (ClusterRole + ClusterRoleBinding)
 ---
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
@@ -30,10 +31,10 @@ spec:
   resources:
     requests:
       cpu: 50m
-      memory: 64Mi
+      memory: 96Mi
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 300m
+      memory: 384Mi
   env:
     # Node name for hostmetrics attribution
     - name: K8S_NODE_NAME
@@ -69,6 +70,72 @@ spec:
           filesystem: {}
           network: {}
           load: {}
+      # Pull-based Prometheus scraping for components that expose /metrics.
+      # Kubernetes SD discovers pods and filters by labels/annotations.
+      # RBAC: see prometheus-rbac.yaml (ClusterRole + ClusterRoleBinding).
+      prometheus:
+        config:
+          scrape_configs:
+            # ── Cilium Agent — network dataplane metrics (:9962) ──────────
+            - job_name: cilium-agent
+              scrape_interval: 30s
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_namespace]
+                  regex: kube-system
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+                  regex: cilium
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_ip]
+                  action: replace
+                  target_label: __address__
+                  replacement: ${1}:9962
+                - source_labels: [__meta_kubernetes_pod_node_name]
+                  target_label: node
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
+            # ── Hubble — L3/L4/L7 flow observability (:9965) ─────────────
+            - job_name: hubble
+              scrape_interval: 30s
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_namespace]
+                  regex: kube-system
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+                  regex: cilium
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_ip]
+                  action: replace
+                  target_label: __address__
+                  replacement: ${1}:9965
+                - source_labels: [__meta_kubernetes_pod_node_name]
+                  target_label: node
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
+            # ── CoreDNS — DNS resolution metrics (:9153) ─────────────────
+            - job_name: coredns
+              scrape_interval: 30s
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_namespace]
+                  regex: kube-system
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+                  regex: kube-dns
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_ip]
+                  action: replace
+                  target_label: __address__
+                  replacement: ${1}:9153
+                - source_labels: [__meta_kubernetes_pod_node_name]
+                  target_label: node
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
     processors:
       # Batch traces/metrics/logs for efficient export
       batch:
@@ -77,8 +144,8 @@ spec:
       # Memory limiter prevents OOM kills
       memory_limiter:
         check_interval: 5s
-        limit_mib: 200
-        spike_limit_mib: 50
+        limit_mib: 300
+        spike_limit_mib: 75
       # Add Kubernetes metadata to telemetry
       resourcedetection:
         detectors:
@@ -110,6 +177,7 @@ spec:
           receivers:
             - otlp
             - hostmetrics
+            - prometheus
           processors:
             - memory_limiter
             - resourcedetection

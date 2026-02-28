@@ -1,0 +1,41 @@
+# Elasticsearch HTTP TLS Certificate — issued by Vault PKI via cert-manager.
+# Replaces ECK's auto-generated self-signed CA with a Vault PKI-issued cert.
+# This brings ES under the same trust chain as all other services (ArgoCD, Gateway).
+#
+# Consumers:
+#   - ECK Elasticsearch: spec.http.tls.certificate.secretName
+#   - Grafana ES datasource: trusts Vault root CA instead of tlsSkipVerify
+#   - Jaeger ES storage: trusts Vault root CA
+#
+# Prerequisites:
+#   - cert-manager ClusterIssuer "vault-pki" must exist (cert-manager-config app)
+#   - Vault PKI role "home-arpa-fqdns" must allow *.logging.svc domains
+#     (or add the specific SAN below to the role's allowed_domains)
+#
+# Vault role update (run on k8s-master-1 if needed):
+#   vault write pki_int/roles/home-arpa-fqdns \
+#     allowed_domains="home.arpa,mgmt.home.arpa,logging.svc.cluster.local,logging.svc" \
+#     allow_subdomains=true \
+#     allow_bare_domains=true \
+#     max_ttl=8760h
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: elasticsearch-tls
+  namespace: logging
+spec:
+  secretName: elasticsearch-tls
+  issuerRef:
+    name: vault-pki
+    kind: ClusterIssuer
+  commonName: homelab-es-http.logging.svc.cluster.local
+  dnsNames:
+    - homelab-es-http.logging.svc.cluster.local
+    - homelab-es-http.logging.svc
+    - homelab-es-http
+  duration: 2160h    # 90 days
+  renewBefore: 360h  # renew 15 days early
+  privateKey:
+    algorithm: RSA
+    size: 4096

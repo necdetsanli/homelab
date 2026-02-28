@@ -1,0 +1,41 @@
+# RBAC for OpenTelemetry Collector Prometheus receiver.
+# Grants the collector ServiceAccount permission to discover pods, services,
+# endpoints, and nodes for kubernetes_sd_configs scrape targets.
+#
+# The OTel Operator creates SA: otel-collector-collector in opentelemetry namespace.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-prometheus-sd
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - endpoints
+      - nodes
+      - nodes/metrics
+      - nodes/proxy
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources:
+      - endpointslices
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs:
+      - /metrics
+      - /metrics/cadvisor
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-prometheus-sd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-collector-prometheus-sd
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector-collector
+    namespace: opentelemetry

@@ -325,6 +325,29 @@ spec:
             - port: "80"
               protocol: TCP
 ---
+# Jaeger -> Elasticsearch (persistent trace storage in logging namespace)
+# Jaeger v2 stores and queries traces from ES 8.16.0 via HTTPS on port 9200.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-jaeger-elasticsearch
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: logging
+            elasticsearch.k8s.elastic.co/cluster-name: homelab
+      toPorts:
+        - ports:
+            - port: "9200"
+              protocol: TCP
+---
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # opentelemetry — intra-namespace + cross-namespace exports + host metrics
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -391,6 +414,34 @@ spec:
       toPorts:
         - ports:
             - port: "4317"
+              protocol: TCP
+---
+# OTel Collector -> kube-system for Prometheus scraping of Cilium (9962/9965)
+# and CoreDNS (9153).  Cilium agents run with hostNetwork (covered by
+# allow-egress-host) but CoreDNS runs with cluster networking.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-otel-prometheus-scrape
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            # Cilium agent Prometheus metrics
+            - port: "9962"
+              protocol: TCP
+            # Hubble metrics
+            - port: "9965"
+              protocol: TCP
+            # CoreDNS Prometheus metrics
+            - port: "9153"
               protocol: TCP
 ---
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

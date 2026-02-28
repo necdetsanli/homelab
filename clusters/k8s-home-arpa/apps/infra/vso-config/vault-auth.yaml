@@ -25,3 +25,8 @@ spec:
     serviceAccount: vault-secrets-operator-controller-manager
     audiences:
       - "vault"
+  # Allow VaultStaticSecret resources in these namespaces to reference
+  # this VaultAuth for cross-namespace secret syncing.
+  allowedNamespaces:
+    - monitoring
+    - tracing

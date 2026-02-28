@@ -6,8 +6,10 @@
 # - No boot-ordering dependency on the bootstrap project's namespace whitelist
 # - Managed under the platform project, which allows all target namespaces
 #
-# sync-wave -1: policies deploy BEFORE workload Applications (wave 1+),
-# ensuring deny-by-default is in place before any pod starts.
+# sync-wave 1 (Application level) — individual policy resources use
+# sync-wave: "-1" at resource level, which takes precedence within
+# ArgoCD sync operations. This ensures deny-by-default is applied
+# before any workload pod starts.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

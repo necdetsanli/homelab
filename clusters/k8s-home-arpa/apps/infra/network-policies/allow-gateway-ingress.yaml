@@ -211,6 +211,8 @@ spec:
             k8s:io.kubernetes.pod.namespace: monitoring
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: elastic-system
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: tracing
       toPorts:
         - ports:
             - port: "9200"

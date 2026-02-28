@@ -6,6 +6,9 @@
 #   base/              — secretGenerator template
 #   cert-manager/      — overlay → cert-manager namespace (for ClusterIssuer caBundleSecretRef)
 #   security/          — overlay → security namespace (for VSO VaultConnection caCertSecretRef)
+#   logging/           — overlay → logging namespace (for Elasticsearch TLS verification)
+#   monitoring/        — overlay → monitoring namespace (for Grafana → ES TLS verification)
+#   tracing/           — overlay → tracing namespace (for Jaeger → ES TLS verification)
 #
 # To rotate the CA: update root-ca.crt, commit, ArgoCD syncs to all consumers.
 ---
@@ -14,3 +17,6 @@ kind: Kustomization
 resources:
   - cert-manager
   - security
+  - logging
+  - monitoring
+  - tracing

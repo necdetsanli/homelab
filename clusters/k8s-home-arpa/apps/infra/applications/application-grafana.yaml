@@ -9,6 +9,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: platform
   source:
@@ -18,10 +20,13 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        # Initial admin credentials — change immediately after first login.
-        # TODO: Integrate with Vault via VSO for secret management.
-        adminUser: admin
-        adminPassword: "changeme"
+        # Admin credentials sourced from Vault via VSO.
+        # Secret "grafana-admin-credentials" is created by VaultStaticSecret
+        # in vso-config/ (synced from Vault KV v2 path: secret/monitoring/grafana).
+        admin:
+          existingSecret: grafana-admin-credentials
+          userKey: admin-user
+          passwordKey: admin-password
         persistence:
           enabled: true
           size: 5Gi
@@ -61,9 +66,24 @@ spec:
                 type: elasticsearch
                 url: https://homelab-es-http.logging.svc.cluster.local:9200
                 access: proxy
+                basicAuth: true
+                basicAuthUser: elastic
                 jsonData:
-                  tlsSkipVerify: true
                   timeField: "@timestamp"
+                  tlsCACert: $__file{/etc/grafana/secrets/vault-ca-bundle/ca.crt}
+                secureJsonData:
+                  # ECK auto-generates 'elastic' user password in Secret:
+                  # homelab-es-elastic-user (logging namespace).
+                  # TODO: Sync ES credentials via VSO for fully automated rotation.
+                  basicAuthPassword: ""
+        # Mount Vault root CA for TLS verification of Elasticsearch datasource.
+        # The vault-ca-bundle Secret is created by the vault-ca-bundle Application
+        # (kustomize overlay → monitoring namespace).
+        extraSecretMounts:
+          - name: vault-ca-bundle
+            secretName: vault-ca-bundle
+            mountPath: /etc/grafana/secrets/vault-ca-bundle
+            readOnly: true
         # Homelab-sized resource limits
         resources:
           requests:
@@ -102,4 +122,5 @@ spec:
         factor: 2
         maxDuration: 3m
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=false

@@ -14,13 +14,12 @@ spec:
 
   # Sync windows: auto-sync allowed only during maintenance window (UTC)
   # Manual syncs are always permitted regardless of window.
-  # NOTE: Window temporarily widened during initial observability rollout.
-  #       Restore to 00:00-06:00 UTC once stack is stable.
   syncWindows:
-    # Allow auto-sync daily — full day during initial deployment
+    # Allow auto-sync daily during maintenance window (00:00-06:00 UTC)
+    # Manual syncs are always permitted regardless of window.
     - kind: allow
       schedule: "0 0 * * *"
-      duration: 24h
+      duration: 6h
       applications:
         - "*"
       manualSync: true
@@ -136,6 +135,8 @@ spec:
       kind: "ServiceAccount"
     - group: ""
       kind: "Endpoints"
+    - group: ""
+      kind: "LimitRange"
     - group: ""
       kind: "PersistentVolumeClaim"
     - group: "apps"

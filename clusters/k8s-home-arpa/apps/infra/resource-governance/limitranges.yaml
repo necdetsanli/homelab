@@ -1,0 +1,279 @@
+# LimitRanges — per-namespace default resource requests/limits.
+#
+# Prevents pods without resource specs from consuming unbounded resources.
+# Every container gets default requests/limits automatically via LimitRange
+# admission controller.  The "max" field rejects pods that exceed the cap.
+#
+# Values are tuned for a 3-node homelab cluster:
+#   - master: ~16GB RAM, ~8 CPU (shared with control plane)
+#   - worker-1, worker-2: ~32GB RAM, ~16 CPU each
+#
+# Adjust after reviewing actual resource consumption:
+#   kubectl top pods -A --sort-by=memory | head -20
+#
+# NOTE: These LimitRanges apply to ALL pods in the namespace, including
+# those deployed by Helm charts that already set resources. Helm-set
+# values take precedence over LimitRange defaults — the defaults only
+# apply to containers without explicit resource specs.
+---
+# ── monitoring ──────────────────────────────────────────────────────────────
+# Grafana, Mimir (multi-component), Zabbix (server + web + agent + postgres)
+# Highest resource density namespace — generous limits.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "4"
+        memory: 4Gi
+    - type: Pod
+      max:
+        cpu: "8"
+        memory: 8Gi
+---
+# ── logging ─────────────────────────────────────────────────────────────────
+# Elasticsearch (single node, 2Gi JVM heap), Loki (SingleBinary)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "4"
+        memory: 4Gi
+    - type: Pod
+      max:
+        cpu: "8"
+        memory: 8Gi
+---
+# ── tracing ─────────────────────────────────────────────────────────────────
+# Tempo (single binary), Jaeger (all-in-one)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "2"
+        memory: 2Gi
+    - type: Pod
+      max:
+        cpu: "4"
+        memory: 4Gi
+---
+# ── security ────────────────────────────────────────────────────────────────
+# VSO controller (lightweight)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: security
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: 2Gi
+---
+# ── cert-manager ────────────────────────────────────────────────────────────
+# cert-manager controller, webhook, CA injector
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: 2Gi
+---
+# ── gateway-system ──────────────────────────────────────────────────────────
+# Cilium Envoy proxy
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: gateway-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "2"
+        memory: 2Gi
+    - type: Pod
+      max:
+        cpu: "4"
+        memory: 4Gi
+---
+# ── elastic-system ──────────────────────────────────────────────────────────
+# ECK operator
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: elastic-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: 2Gi
+---
+# ── opentelemetry ───────────────────────────────────────────────────────────
+# OTel operator + DaemonSet collectors
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: opentelemetry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "1"
+        memory: 512Mi
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: 1Gi
+---
+# ── longhorn-system ─────────────────────────────────────────────────────────
+# Longhorn manager, driver, CSI attacher, provisioner — many components
+# Needs generous limits due to volume operation spikes
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 250m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "2"
+        memory: 2Gi
+    - type: Pod
+      max:
+        cpu: "4"
+        memory: 4Gi
+---
+# ── nfs-storage ─────────────────────────────────────────────────────────────
+# NFS provisioner controller
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: nfs-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 100m
+        memory: 128Mi
+      defaultRequest:
+        cpu: 25m
+        memory: 32Mi
+      max:
+        cpu: 500m
+        memory: 512Mi
+    - type: Pod
+      max:
+        cpu: "1"
+        memory: 1Gi

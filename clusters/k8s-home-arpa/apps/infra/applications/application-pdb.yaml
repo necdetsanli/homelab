@@ -1,7 +1,11 @@
+# PodDisruptionBudgets — protect single-replica workloads during node drains.
+# Ensures at least 1 replica of critical services remains available during
+# RKE2 rolling upgrades (sequential drain strategy).
+# Sync-wave 1: deploy alongside platform infrastructure.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cilium-bgp
+  name: pod-disruption-budgets
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -9,13 +13,12 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: platform
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: kube-system
   source:
-    repoURL: https://github.com/necdetsanli/homelab.git
+    repoURL: "https://github.com/necdetsanli/homelab.git"
     targetRevision: main
-    path: clusters/k8s-home-arpa/apps/infra/cilium-bgp
+    path: "clusters/k8s-home-arpa/apps/infra/pdb"
+  destination:
+    server: "https://kubernetes.default.svc"
   syncPolicy:
     automated:
       prune: true
