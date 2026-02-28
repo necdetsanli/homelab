@@ -85,6 +85,13 @@ spec:
           replicas: 0
         alertmanager:
           replicas: 0
+  ignoreDifferences:
+    # Kubernetes mutates 0-replica StatefulSets (alertmanager, ruler) by
+    # injecting persistentVolumeClaimRetentionPolicy. This is cosmetic.
+    - group: apps
+      kind: StatefulSet
+      jqPathExpressions:
+        - .spec.persistentVolumeClaimRetentionPolicy
   destination:
     server: "https://kubernetes.default.svc"
     namespace: monitoring
