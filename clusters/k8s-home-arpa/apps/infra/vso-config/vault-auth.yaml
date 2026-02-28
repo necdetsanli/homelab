@@ -3,7 +3,9 @@
 #
 # Prerequisites (Vault side):
 #   - Kubernetes auth enabled at auth/kubernetes
-#   - Role "vso" bound to SA "vault-secrets-operator-controller-manager" in namespace "security"
+#   - Role "vso" bound to SA "vault-secrets-operator-controller-manager"
+#     in namespaces: security, monitoring, tracing
+#     (VSO 1.3.0 creates TokenRequests in the VaultStaticSecret's namespace)
 #   - Policy "vso" granting read on secret/data/*
 #
 # Traffic flow:

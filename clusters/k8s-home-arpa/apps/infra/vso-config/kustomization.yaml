@@ -5,6 +5,7 @@ resources:
   # (single source of truth: vault-ca-bundle/root-ca.crt → security namespace)
   - vault-connection.yaml
   - vault-auth.yaml
+  - vso-cross-namespace-sa.yaml
   - vault-static-secret-test.yaml
   - vault-static-secret-grafana.yaml
   - vault-static-secret-jaeger-es.yaml

@@ -1,0 +1,31 @@
+# VSO Cross-Namespace ServiceAccounts
+# ─────────────────────────────────────
+# VSO 1.3.0 looks up the ServiceAccount specified in VaultAuth within the
+# VaultStaticSecret's namespace (not the VaultAuth's namespace).  For
+# cross-namespace secret syncing to work, the SA must exist in each
+# consumer namespace.
+#
+# These SAs are token-only identities — no pods run under them.  VSO
+# creates a TokenRequest against them, presents the JWT to Vault, and
+# Vault validates it via the Kubernetes TokenReview API.
+#
+# Vault role "vso" must list all these namespaces in
+# bound_service_account_namespaces (see vault-auth.yaml header comments).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-secrets-operator-controller-manager
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: vso-cross-namespace
+    app.kubernetes.io/part-of: vault-secrets-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-secrets-operator-controller-manager
+  namespace: tracing
+  labels:
+    app.kubernetes.io/component: vso-cross-namespace
+    app.kubernetes.io/part-of: vault-secrets-operator
