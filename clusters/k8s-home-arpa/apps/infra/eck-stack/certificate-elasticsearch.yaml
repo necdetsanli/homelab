@@ -33,7 +33,6 @@ spec:
   dnsNames:
     - homelab-es-http.logging.svc.cluster.local
     - homelab-es-http.logging.svc
-    - homelab-es-http
   duration: 2160h    # 90 days
   renewBefore: 360h  # renew 15 days early
   privateKey:
