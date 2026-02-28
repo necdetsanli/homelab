@@ -63,6 +63,8 @@ certbot/dns01/cleanup.sh|/usr/local/lib/certbot-dns01/cleanup.sh|root:root|0750|
 certbot/systemd/vault-acme-issue-all.timer|/etc/systemd/system/vault-acme-issue-all.timer|root:root|0644|systemd
 certbot/systemd/vault-acme-issue-all.service|/etc/systemd/system/vault-acme-issue-all.service|root:root|0644|systemd
 certbot/systemd/vault-acme-issue-all.service.d/20-certsync.conf|/etc/systemd/system/vault-acme-issue-all.service.d/20-certsync.conf|root:root|0644|systemd
+certbot/tmpfiles.d/certbot-dnsupd.conf|/etc/tmpfiles.d/certbot-dnsupd.conf|root:root|0644|systemd
+certbot/hooks/deploy/50-haproxy-deploy|/etc/letsencrypt/renewal-hooks/deploy/50-haproxy-deploy|root:root|0750|none
 haproxy/certsync/crt-list.txt|/etc/haproxy/certsync/crt-list.txt|root:haproxy|0640|none
 haproxy/certsync/allowlist.txt|/etc/haproxy/certsync/allowlist.txt|root:haproxy|0640|none
 keepalived/scripts/keepalived-notify-certsync.sh|/usr/local/sbin/keepalived-notify-certsync.sh|root:root|0750|none
