@@ -90,8 +90,9 @@ spec:
     # injecting persistentVolumeClaimRetentionPolicy. This is cosmetic.
     - group: apps
       kind: StatefulSet
-      jqPathExpressions:
-        - .spec.persistentVolumeClaimRetentionPolicy
+      name: mimir-alertmanager
+      jsonPointers:
+        - /spec/persistentVolumeClaimRetentionPolicy
   destination:
     server: "https://kubernetes.default.svc"
     namespace: monitoring
