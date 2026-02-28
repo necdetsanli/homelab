@@ -163,7 +163,7 @@ metadata:
 spec:
   endpointSelector:
     matchLabels:
-      control-plane: elastic-operator
+      app.kubernetes.io/name: elastic-operator
   ingress:
     - fromEntities:
         - kube-apiserver
