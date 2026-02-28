@@ -76,23 +76,21 @@ spec:
             enabled: false
           persistentVolume:
             storageClass: nfs
-        # Optional components — disabled for homelab
+        # Optional components
         query_scheduler:
           enabled: false
         overrides_exporter:
           replicas: 0
+        # Ruler — evaluates recording & alerting rules against stored metrics.
+        # Pushes firing alerts to alertmanager for routing/notification.
         ruler:
-          replicas: 0
+          replicas: 1
+        # Alertmanager — deduplicates, groups, and routes alerts from ruler.
+        # Configure receivers (Slack, email, PagerDuty) via alertmanager config.
         alertmanager:
-          replicas: 0
-  ignoreDifferences:
-    # Kubernetes mutates 0-replica StatefulSets (alertmanager, ruler) by
-    # injecting persistentVolumeClaimRetentionPolicy. This is cosmetic.
-    - group: apps
-      kind: StatefulSet
-      name: mimir-alertmanager
-      jsonPointers:
-        - /spec/persistentVolumeClaimRetentionPolicy
+          replicas: 1
+          persistentVolume:
+            storageClass: nfs
   destination:
     server: "https://kubernetes.default.svc"
     namespace: monitoring
@@ -109,4 +107,3 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false
-      - RespectIgnoreDifferences=true
