@@ -107,3 +107,12 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false
+      - RespectIgnoreDifferences=true
+      - ServerSideDiff=true
+  ignoreDifferences:
+    # K8s auto-injects persistentVolumeClaimRetentionPolicy on StatefulSets.
+    # SSA treats this as a diff since ArgoCD doesn't own the field.
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/persistentVolumeClaimRetentionPolicy
