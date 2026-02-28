@@ -13,6 +13,7 @@
 # Deployed to: /etc/haproxy/certsync/allowlist.txt
 # =============================================================================
 nextcloud.app.home.arpa.pem
+meshtastic.app.home.arpa.pem
 opnsense.mgmt.home.arpa.pem
 wazuh.mgmt.home.arpa.pem
 ipa.mgmt.home.arpa.pem

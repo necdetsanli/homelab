@@ -75,6 +75,7 @@ fi
 # ---------------------------------------------------------------------------
 domains=(
   "nextcloud.app.home.arpa"
+  "meshtastic.app.home.arpa"
   "opnsense.mgmt.home.arpa"
   "wazuh.mgmt.home.arpa"
   "ipa.mgmt.home.arpa"

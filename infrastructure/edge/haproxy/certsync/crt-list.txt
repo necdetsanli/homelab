@@ -17,6 +17,7 @@
 # Deployed to: /etc/haproxy/certsync/crt-list.txt
 # =============================================================================
 /etc/haproxy/certs/nextcloud.app.home.arpa.pem    nextcloud.app.home.arpa
+/etc/haproxy/certs/meshtastic.app.home.arpa.pem   meshtastic.app.home.arpa
 /etc/haproxy/certs/opnsense.mgmt.home.arpa.pem    opnsense.mgmt.home.arpa
 /etc/haproxy/certs/wazuh.mgmt.home.arpa.pem       wazuh.mgmt.home.arpa
 /etc/haproxy/certs/ipa.mgmt.home.arpa.pem         ipa.mgmt.home.arpa
