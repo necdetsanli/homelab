@@ -26,7 +26,17 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
-data: {}
+data:
+  # ── System-level ignoreDifferences ────────────────────────────────────
+  # K8s auto-injects persistentVolumeClaimRetentionPolicy on StatefulSets.
+  # Application-level ignoreDifferences + SSA has a known bug where the
+  # sync-status code path does not respect jsonPointers / jqPathExpressions.
+  # System-level customization feeds into the normalizer at a lower level
+  # that consistently affects both the diff engine AND sync-status computation.
+  resource.customizations.ignoreDifferences.apps_StatefulSet: |
+    jsonPointers:
+      - /spec/persistentVolumeClaimRetentionPolicy
+
   ## ── Uncomment below after FreeIPA is deployed ──────────────────────────
   #
   # url: "https://argocd.mgmt.home.arpa"
