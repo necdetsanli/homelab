@@ -91,7 +91,7 @@ spec:
                 - source_labels: [__meta_kubernetes_pod_ip]
                   action: replace
                   target_label: __address__
-                  replacement: ${1}:9962
+                  replacement: $${1}:9962
                 - source_labels: [__meta_kubernetes_pod_node_name]
                   target_label: node
                 - source_labels: [__meta_kubernetes_pod_name]
@@ -111,7 +111,7 @@ spec:
                 - source_labels: [__meta_kubernetes_pod_ip]
                   action: replace
                   target_label: __address__
-                  replacement: ${1}:9965
+                  replacement: $${1}:9965
                 - source_labels: [__meta_kubernetes_pod_node_name]
                   target_label: node
                 - source_labels: [__meta_kubernetes_pod_name]
@@ -131,7 +131,7 @@ spec:
                 - source_labels: [__meta_kubernetes_pod_ip]
                   action: replace
                   target_label: __address__
-                  replacement: ${1}:9153
+                  replacement: $${1}:9153
                 - source_labels: [__meta_kubernetes_pod_node_name]
                   target_label: node
                 - source_labels: [__meta_kubernetes_pod_name]
