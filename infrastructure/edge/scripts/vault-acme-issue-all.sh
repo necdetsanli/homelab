@@ -90,6 +90,7 @@ domains=(
   "netdata.mgmt.home.arpa"
   "ntopng.mgmt.home.arpa"
   "me30.mgmt.home.arpa"
+  "tbeam.mgmt.home.arpa"
   "argocd.mgmt.home.arpa"
   "longhorn.mgmt.home.arpa"
   "hubble.mgmt.home.arpa"
