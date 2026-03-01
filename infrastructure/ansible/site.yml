@@ -15,5 +15,10 @@
       tags: [sshd]
     - role: wazuh_agent
       tags: [wazuh_agent]
-    - role: node_exporter
-      tags: [node_exporter]
+
+# node_exporter — skip K8s nodes (managed by kube-prometheus-stack DaemonSet)
+- name: Deploy node_exporter (non-K8s hosts)
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  tags: [node_exporter]
+  roles:
+    - node_exporter

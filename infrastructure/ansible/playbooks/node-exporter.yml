@@ -1,9 +1,10 @@
 ---
-# Deploy / upgrade Prometheus node_exporter on all FreeIPA-enrolled hosts
+# Deploy / upgrade Prometheus node_exporter on non-K8s FreeIPA hosts
+# K8s nodes are managed by kube-prometheus-stack DaemonSet.
 # Usage:
 #   ansible-playbook playbooks/node-exporter.yml
 #   ansible-playbook playbooks/node-exporter.yml --limit vault
 - name: Deploy node_exporter
-  hosts: freeipa_enrolled
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
   roles:
     - node_exporter
