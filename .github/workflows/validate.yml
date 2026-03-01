@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13924f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install yamllint
         run: pip install --quiet yamllint
@@ -32,12 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13924f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install kustomize
-        uses: imranismail/setup-kustomize@2ba527d4d7d0b3af58f1025ee4adf15c3698cc53 # v2
+        uses: imranismail/setup-kustomize@2ba527d4d055ab63514ba50a99456fc35684947f # v2.1.0
         with:
-          kustomize-version: "5.6.0"
+          kustomize-version: "5.8.1"
 
       - name: Build all overlays
         run: |
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13924f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run ShellCheck
         run: |
