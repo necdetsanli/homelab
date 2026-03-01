@@ -39,6 +39,14 @@ firewall_node_exporter_port: 9100
 firewall_node_exporter_sources:
   - "10.42.0.0/16"         # K8s pod CIDR (Cilium native routing, L2)
 
+# ── Docker host forwarding ────────────────────────────────────
+# Enable on hosts running Docker containers (e.g. Rancher).
+# Docker containers rely on the kernel FORWARD chain for all traffic
+# (container ↔ external network, port mappings, DNS, etc.).
+# This adds conntrack + docker0/veth interface rules to the forward chain.
+firewall_docker_host: false
+firewall_docker_bridge: "docker0"
+
 # ── Per-host/group inbound rules ─────────────────────────────
 # Override in group_vars or host_vars. Each item:
 #   port:     int or list of ints (e.g. 8200 or [8200, 8201])

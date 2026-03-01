@@ -107,6 +107,15 @@ table inet filter {
   # ── Forward chain (not a router) ──────────────────────────
   chain forward {
     type filter hook forward priority 0; policy {{ firewall_forward_policy }};
+
+{% if firewall_docker_host | default(false) %}
+    # --- Docker container forwarding ---
+    # Containers use FORWARD for all networking (outbound, port mappings, DNS).
+    ct state established,related counter accept comment "docker: return traffic"
+    ct state invalid counter drop comment "docker: drop invalid conntrack"
+    iifname "{{ firewall_docker_bridge }}" counter accept comment "docker: outbound from containers"
+    oifname "{{ firewall_docker_bridge }}" counter accept comment "docker: inbound to containers"
+{% endif %}
     counter comment "count forward drops"
   }
 
