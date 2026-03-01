@@ -1,14 +1,56 @@
-# PodDisruptionBudgets — protect single-replica workloads during drains.
+# PodDisruptionBudgets — protect workloads during node drains.
 #
-# For single-replica deployments, minAvailable: 1 means node drains BLOCK
-# until the pod is rescheduled to another node. This prevents data loss
-# and downtime but may slow rolling upgrades. On a 3-node cluster with
-# 2 workers, this is the correct trade-off.
+# For single-replica deployments, minAvailable: 1 blocks eviction until
+# the pod is rescheduled. For multi-replica (HA) deployments, it ensures
+# at least 1 pod remains running during rolling drains.
 #
-# RKE2 upgrade strategy uses drain (sequential, cordon+drain+upgrade+uncordon).
+# RKE2 upgrade strategy: sequential cordon+drain+upgrade+uncordon.
 # Without PDBs, all pods are evicted simultaneously from the draining node.
 ---
-# ── monitoring ──────────────────────────────────────────────────────────────
+# ── cert-manager (HA: 2 replicas each) ─────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cert-manager-controller
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/component: controller
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cert-manager-webhook
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/component: webhook
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cert-manager-cainjector
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/component: cainjector
+---
+# ── monitoring (HA: 2 replicas each) ───────────────────────────────────────
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -35,7 +77,77 @@ spec:
     matchLabels:
       app.kubernetes.io/name: zabbix-server
 ---
-# ── logging ─────────────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-ingester
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: mimir
+      app.kubernetes.io/component: ingester
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-distributor
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: mimir
+      app.kubernetes.io/component: distributor
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-querier
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: mimir
+      app.kubernetes.io/component: querier
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-query-frontend
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: mimir
+      app.kubernetes.io/component: query-frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-nginx
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: mimir
+      app.kubernetes.io/component: nginx
+---
+# ── logging (HA: 2 replicas each) ──────────────────────────────────────────
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -47,7 +159,22 @@ spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: loki
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/component: single-binary
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: loki-gateway
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/component: gateway
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -61,6 +188,19 @@ spec:
   selector:
     matchLabels:
       elasticsearch.k8s.elastic.co/cluster-name: homelab
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kibana
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      kibana.k8s.elastic.co/name: homelab
 ---
 # ── tracing ─────────────────────────────────────────────────────────────────
 apiVersion: policy/v1

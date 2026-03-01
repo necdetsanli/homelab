@@ -1,5 +1,5 @@
 # Elasticsearch cluster managed by ECK Operator.
-# Single-node deployment for homelab — adequate for log analytics workload.
+# 2-node HA deployment with anti-affinity (1 per worker node).
 # ECK auto-generates 'elastic' user credentials in Secret: homelab-es-elastic-user
 # Service endpoint: homelab-es-http.logging.svc:9200
 ---
@@ -19,17 +19,24 @@ spec:
         secretName: elasticsearch-tls
   nodeSets:
     - name: default
-      count: 1
+      count: 2
       config:
         # Disable mmap to comply with PSA restricted (no sysctl required)
         node.store.allow_mmap: false
-        # ECK handles discovery automatically for single-node (count: 1).
+        # ECK handles discovery automatically for multi-node clusters.
         # Do NOT set discovery.type: single-node — it conflicts with
         # cluster.initial_master_nodes that ECK injects automatically.
         # Disable machine learning (saves ~200MB RAM)
         xpack.ml.enabled: false
       podTemplate:
         spec:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      elasticsearch.k8s.elastic.co/cluster-name: homelab
+                  topologyKey: kubernetes.io/hostname
           containers:
             - name: elasticsearch
               resources:

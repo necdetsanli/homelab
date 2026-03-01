@@ -22,6 +22,17 @@ spec:
         # Helm hooks are incompatible with ArgoCD sync
         startupapicheck:
           enabled: false
+        # HA: 2 replicas with hard anti-affinity (1 per worker node).
+        # Controller uses leader election — only one active; second is standby.
+        replicaCount: 2
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: cert-manager
+                    app.kubernetes.io/component: controller
+                topologyKey: kubernetes.io/hostname
         # Resource limits -- right-sized for homelab (3-node cluster)
         resources:
           requests:
@@ -31,6 +42,16 @@ spec:
             cpu: 200m
             memory: 256Mi
         webhook:
+          # HA: webhook handles admission requests — must survive node failure.
+          replicaCount: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: cert-manager
+                      app.kubernetes.io/component: webhook
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m
@@ -39,6 +60,16 @@ spec:
               cpu: 100m
               memory: 128Mi
         cainjector:
+          # HA: cainjector injects CA bundles — uses leader election.
+          replicaCount: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: cert-manager
+                      app.kubernetes.io/component: cainjector
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m

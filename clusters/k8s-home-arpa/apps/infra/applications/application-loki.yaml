@@ -1,5 +1,5 @@
 # Loki — log aggregation backend for the LGTM stack.
-# Deployed in SingleBinary mode for homelab efficiency.
+# Deployed in SingleBinary mode with 2-replica HA.
 # Receives logs from OpenTelemetry Collector via OTLP.
 # Grafana queries Loki via the gateway service.
 apiVersion: argoproj.io/v1alpha1
@@ -41,8 +41,19 @@ spec:
           # Retention: auto-delete logs older than 7 days
           limits_config:
             retention_period: 168h
+        # HA: 2 replicas form a memberlist ring. replication_factor: 1 means
+        # the ring distributes streams across pods (no data duplication).
+        # Each pod has its own NFS-backed PVC (StatefulSet).
         singleBinary:
-          replicas: 1
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: loki
+                      app.kubernetes.io/component: single-binary
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 50m
@@ -60,9 +71,17 @@ spec:
         # because nginx resolves it at startup (not via k8s DNS).
         gateway:
           enabled: true
-          replicas: 1
+          replicas: 2
           nginxConfig:
             resolver: "10.43.0.10"
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: loki
+                      app.kubernetes.io/component: gateway
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m

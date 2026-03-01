@@ -1,11 +1,11 @@
 # Mimir — long-term metrics storage backend for the LGTM stack.
-# Deployed as single-replica distributed (all components × 1 pod).
+# Deployed as HA distributed (critical data-path components × 2 pods).
 # Receives metrics from OpenTelemetry Collector via OTLP.
 # Grafana queries Mimir via the nginx gateway at /prometheus endpoint.
 # Embedded MinIO provides S3-compatible object storage on NFS.
 #
 # NOTE: mimir-distributed chart has no monolithic mode. Using 5.5.1 with
-# 1 replica per component for minimal homelab footprint.
+# critical components at 2 replicas for HA; others at 1 for efficiency.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -24,9 +24,9 @@ spec:
     helm:
       releaseName: mimir
       valuesObject:
-        # Mimir config — single-replica distributed mode.
+        # Mimir config — HA distributed mode.
         # Chart 5.5.1 does NOT support monolithic mode (no deploymentMode key).
-        # We run 1 replica of each required component for homelab efficiency.
+        # Critical data-path components run 2 replicas; others run 1.
         mimir:
           structuredConfig:
             multitenancy_enabled: false
@@ -41,11 +41,23 @@ spec:
         # Nginx reverse-proxy — single API endpoint for Grafana + OTel.
         # resolver must be the CoreDNS ClusterIP; default hostname fails
         # because nginx resolves at startup before kube-dns is reachable.
+        # HA: critical data-path components run 2 replicas with anti-affinity.
+        # replication_factor stays at 1 (set by chart when zoneAware=false) —
+        # the ring distributes series across ingesters for availability.
+        # With 2 workers this avoids quorum issues during single-node failure.
         nginx:
           enabled: true
-          replicas: 1
+          replicas: 2
           nginxConfig:
             resolver: "10.43.0.10"
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: mimir
+                      app.kubernetes.io/component: nginx
+                  topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m
@@ -53,19 +65,50 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
-        # Single-replica distributed components
         ingester:
-          replicas: 1
+          replicas: 2
           zoneAwareReplication:
             enabled: false
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: mimir
+                      app.kubernetes.io/component: ingester
+                  topologyKey: kubernetes.io/hostname
           persistentVolume:
             storageClass: nfs
         distributor:
-          replicas: 1
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: mimir
+                      app.kubernetes.io/component: distributor
+                  topologyKey: kubernetes.io/hostname
         querier:
-          replicas: 1
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: mimir
+                      app.kubernetes.io/component: querier
+                  topologyKey: kubernetes.io/hostname
         query_frontend:
-          replicas: 1
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: mimir
+                      app.kubernetes.io/component: query-frontend
+                  topologyKey: kubernetes.io/hostname
         compactor:
           replicas: 1
           persistentVolume:

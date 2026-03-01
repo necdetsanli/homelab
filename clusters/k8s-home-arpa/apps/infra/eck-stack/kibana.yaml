@@ -10,11 +10,18 @@ metadata:
   namespace: logging
 spec:
   version: 8.16.0
-  count: 1
+  count: 2
   elasticsearchRef:
     name: homelab
   podTemplate:
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  kibana.k8s.elastic.co/name: homelab
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: kibana
           resources:
