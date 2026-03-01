@@ -5,5 +5,5 @@
     state: restarted
 
 - name: Flush sssd cache
-  ansible.builtin.command: sss_cache -E
+  ansible.builtin.command: /usr/sbin/sss_cache -E
   when: sssd_flush_cache_on_change
