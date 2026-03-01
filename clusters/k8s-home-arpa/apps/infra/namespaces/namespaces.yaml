@@ -94,7 +94,6 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 ---
----
 apiVersion: v1
 kind: Namespace
 metadata:
