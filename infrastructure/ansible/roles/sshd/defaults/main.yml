@@ -33,3 +33,4 @@ sshd_permit_user_environment: false
 # ── Files to remove (conflicting drop-ins) ───────────────────
 sshd_remove_dropins:
   - 50-cloud-init.conf
+  - 10-allowgroups-ssh-admins.conf
