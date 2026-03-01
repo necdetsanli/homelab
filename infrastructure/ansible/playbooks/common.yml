@@ -1,0 +1,9 @@
+---
+# Apply common baseline to all FreeIPA-enrolled hosts
+# Usage:
+#   ansible-playbook playbooks/common.yml
+#   ansible-playbook playbooks/common.yml --limit k8s_masters
+- name: Apply common baseline configuration
+  hosts: freeipa_enrolled
+  roles:
+    - common

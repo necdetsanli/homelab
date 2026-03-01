@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+[Journal]
+SystemMaxUse={{ common_journald_max_disk_size }}
+SystemMaxFileSize={{ common_journald_max_file_size }}
+MaxRetentionSec=1month
+ForwardToSyslog=yes
+Compress=yes

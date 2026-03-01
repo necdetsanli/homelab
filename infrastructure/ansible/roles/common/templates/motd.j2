@@ -1,0 +1,10 @@
+  ┌──────────────────────────────────────────────┐
+  │  {{ ansible_hostname | center(44) }}│
+  │  {{ ansible_distribution ~ ' ' ~ ansible_distribution_version | center(44) }}│
+  ├──────────────────────────────────────────────┤
+  │  IP : {{ ansible_default_ipv4.address | default('N/A') | ljust(37) }}│
+  │  CPU: {{ ansible_processor_vcpus | default('?') | string | ljust(37) }}│
+  │  RAM: {{ (ansible_memtotal_mb | default(0) / 1024) | round(1) | string ~ ' GB' | ljust(37) }}│
+  │  Domain: {{ domain | default('home.arpa') | ljust(34) }}│
+  └──────────────────────────────────────────────┘
+  Managed by Ansible — do not edit manually.

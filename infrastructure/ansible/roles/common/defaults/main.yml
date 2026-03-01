@@ -1,0 +1,61 @@
+---
+# Common role defaults
+# Applied to all FreeIPA-enrolled hosts for baseline consistency.
+
+# ── Timezone & Locale ────────────────────────────────────────
+common_timezone: "Europe/Istanbul"
+common_locale: "en_US.UTF-8"
+
+# ── NTP (chrony) ─────────────────────────────────────────────
+common_ntp_enabled: true
+common_ntp_servers:
+  - "{{ ntp_server | default('192.168.20.1') }}"
+
+# ── DNS (resolv.conf managed by SSSD/NetworkManager, not here)
+
+# ── Common packages ──────────────────────────────────────────
+common_packages:
+  - curl
+  - wget
+  - jq
+  - vim
+  - htop
+  - tree
+  - unzip
+  - ca-certificates
+  - software-properties-common
+  - bash-completion
+  - rsync
+  - lsof
+  - net-tools
+  - dnsutils
+  - tcpdump
+
+# ── Unattended upgrades ─────────────────────────────────────
+common_unattended_upgrades: true
+common_unattended_upgrades_origins:
+  - "${distro_id}:${distro_codename}-security"
+
+# ── Kernel tuning (sysctl) ──────────────────────────────────
+common_sysctl:
+  # Harden network stack
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  # Increase inotify limits (useful for K8s, Vault, etc.)
+  fs.inotify.max_user_watches: 524288
+  fs.inotify.max_user_instances: 512
+
+# ── MOTD ─────────────────────────────────────────────────────
+common_motd_enabled: true
+
+# ── Journald ─────────────────────────────────────────────────
+common_journald_max_disk_size: "500M"
+common_journald_max_file_size: "50M"

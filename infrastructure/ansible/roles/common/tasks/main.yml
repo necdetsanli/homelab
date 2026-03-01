@@ -1,0 +1,125 @@
+---
+# ── Timezone ─────────────────────────────────────────────────
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+
+# ── Locale ───────────────────────────────────────────────────
+- name: Ensure locale is generated
+  ansible.builtin.locale_gen:
+    name: "{{ common_locale }}"
+    state: present
+
+- name: Set default locale
+  ansible.builtin.copy:
+    dest: /etc/default/locale
+    content: |
+      LANG={{ common_locale }}
+      LC_ALL={{ common_locale }}
+    mode: "0644"
+
+# ── Common packages ──────────────────────────────────────────
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# ── NTP (chrony) ─────────────────────────────────────────────
+# LXC containers inherit time from the Proxmox host — chrony cannot
+# adjust the clock inside an unprivileged container.
+- name: Install chrony
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+  when:
+    - common_ntp_enabled
+    - ansible_virtualization_type != 'lxc'
+
+- name: Deploy chrony configuration
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    mode: "0644"
+    backup: true
+  when:
+    - common_ntp_enabled
+    - ansible_virtualization_type != 'lxc'
+  notify: Restart chrony
+
+- name: Enable and start chrony
+  ansible.builtin.systemd:
+    name: chrony
+    state: started
+    enabled: true
+  when:
+    - common_ntp_enabled
+    - ansible_virtualization_type != 'lxc'
+
+# ── Unattended upgrades ─────────────────────────────────────
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+  when: common_unattended_upgrades
+
+- name: Configure unattended-upgrades origins
+  ansible.builtin.template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: "0644"
+  when: common_unattended_upgrades
+
+- name: Enable auto-upgrade timer
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    mode: "0644"
+  when: common_unattended_upgrades
+
+# ── Sysctl hardening ────────────────────────────────────────
+# LXC containers share the host kernel — some sysctl keys are read-only.
+# We skip failures gracefully on LXCs.
+- name: Apply sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ common_sysctl | dict2items }}"
+  failed_when: false
+  when: ansible_virtualization_type != 'lxc'
+
+# ── Journald ─────────────────────────────────────────────────
+- name: Configure journald disk usage
+  ansible.builtin.template:
+    src: journald.conf.j2
+    dest: /etc/systemd/journald.conf
+    mode: "0644"
+  notify: Restart journald
+
+# ── MOTD ─────────────────────────────────────────────────────
+- name: Deploy custom MOTD
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    mode: "0644"
+  when: common_motd_enabled
+
+- name: Disable default dynamic MOTD scripts
+  ansible.builtin.file:
+    path: "/etc/update-motd.d/{{ item }}"
+    mode: "0644"
+  loop:
+    - 10-help-text
+    - 50-motd-news
+    - 91-release-upgrade
+  failed_when: false
+  when: common_motd_enabled

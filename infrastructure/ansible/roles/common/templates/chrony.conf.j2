@@ -1,0 +1,24 @@
+# {{ ansible_managed }}
+# Chrony configuration — managed by Ansible common role
+
+{% for server in common_ntp_servers %}
+server {{ server }} iburst prefer
+{% endfor %}
+
+# Fall back to system clock if no NTP source available
+local stratum 10
+
+# Record rate info to drift file
+driftfile /var/lib/chrony/chrony.drift
+
+# Log tracking, measurements, statistics
+logdir /var/log/chrony
+
+# Allow NTP client access from local network (optional)
+# allow 192.168.20.0/24
+
+# Step clock if offset > 1 second during first 3 updates
+makestep 1 3
+
+# Enable RTC sync
+rtcsync
