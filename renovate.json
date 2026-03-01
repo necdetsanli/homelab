@@ -4,6 +4,7 @@
   "extends": [
     "config:recommended",
     "docker:pinDigests",
+    "helpers:pinGitHubActionDigests",
     ":semanticCommits",
     ":semanticCommitTypeAll(chore)"
   ],
@@ -25,11 +26,11 @@
     {
       "description": "Group Grafana stack charts (Grafana, Loki, Mimir, Tempo)",
       "matchManagers": ["argocd"],
-      "matchPackagePatterns": [
-        "^grafana$",
-        "^loki$",
-        "^mimir-distributed$",
-        "^tempo-distributed$"
+      "matchPackageNames": [
+        "grafana",
+        "loki",
+        "mimir-distributed",
+        "tempo-distributed"
       ],
       "groupName": "grafana-stack",
       "commitMessageTopic": "Grafana stack charts"
@@ -37,14 +38,14 @@
     {
       "description": "Group Elastic stack charts (ECK operator)",
       "matchManagers": ["argocd"],
-      "matchPackagePatterns": ["^eck-operator$"],
+      "matchPackageNames": ["eck-operator"],
       "groupName": "elastic-stack",
       "commitMessageTopic": "Elastic stack charts"
     },
     {
       "description": "Group OpenTelemetry charts",
       "matchManagers": ["argocd"],
-      "matchPackagePatterns": ["opentelemetry"],
+      "matchPackageNames": ["/opentelemetry/"],
       "groupName": "opentelemetry",
       "commitMessageTopic": "OpenTelemetry charts"
     },
