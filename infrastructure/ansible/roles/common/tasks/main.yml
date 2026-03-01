@@ -26,6 +26,12 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Install Ubuntu-only packages
+  ansible.builtin.apt:
+    name: "{{ common_packages_ubuntu }}"
+    state: present
+  when: ansible_distribution == 'Ubuntu'
+
 # ── NTP (chrony) ─────────────────────────────────────────────
 # LXC containers inherit time from the Proxmox host — chrony cannot
 # adjust the clock inside an unprivileged container.

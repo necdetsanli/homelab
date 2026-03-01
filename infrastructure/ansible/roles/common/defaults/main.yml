@@ -23,13 +23,16 @@ common_packages:
   - tree
   - unzip
   - ca-certificates
-  - software-properties-common
   - bash-completion
   - rsync
   - lsof
   - net-tools
   - dnsutils
   - tcpdump
+
+# Ubuntu-only packages (skipped on Debian)
+common_packages_ubuntu:
+  - software-properties-common
 
 # ── Unattended upgrades ─────────────────────────────────────
 common_unattended_upgrades: true
