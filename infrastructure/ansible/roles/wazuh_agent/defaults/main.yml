@@ -1,0 +1,8 @@
+---
+# Wazuh agent defaults
+
+wazuh_manager_ip: "192.168.50.4"
+wazuh_agent_version: "4.14.3-1"
+wazuh_repo_url: "https://packages.wazuh.com/4.x/apt/"
+wazuh_gpg_key_url: "https://packages.wazuh.com/key/GPG-KEY-WAZUH"
+wazuh_gpg_keyring: "/usr/share/keyrings/wazuh.gpg"

@@ -1,0 +1,9 @@
+---
+# Deploy Wazuh agent to all FreeIPA-enrolled hosts
+# Usage:
+#   ansible-playbook playbooks/wazuh-agent.yml
+#   ansible-playbook playbooks/wazuh-agent.yml --limit "ansible.home.arpa,meshtastic.home.arpa"
+- name: Install and configure Wazuh agent
+  hosts: freeipa_enrolled
+  roles:
+    - wazuh_agent
