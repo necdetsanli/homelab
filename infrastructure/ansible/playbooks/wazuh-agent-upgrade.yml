@@ -1,0 +1,56 @@
+---
+# Upgrade Wazuh agent to a specific version
+# Usage:
+#   ansible-playbook playbooks/wazuh-agent-upgrade.yml -e wazuh_agent_target_version=4.15.0-1
+#   ansible-playbook playbooks/wazuh-agent-upgrade.yml -e wazuh_agent_target_version=4.15.0-1 --limit vault
+#
+# IMPORTANT: Always check Wazuh compatibility matrix before upgrading.
+# Agent version must be compatible with your Wazuh manager version.
+# Docs: https://documentation.wazuh.com/current/upgrade-guide/index.html
+- name: Upgrade Wazuh agent
+  hosts: freeipa_enrolled
+  vars:
+    wazuh_agent_target_version: ""
+  pre_tasks:
+    - name: Validate target version is provided
+      ansible.builtin.fail:
+        msg: >
+          Target version required. Usage:
+          ansible-playbook playbooks/wazuh-agent-upgrade.yml -e wazuh_agent_target_version=4.15.0-1
+      when: wazuh_agent_target_version | length == 0
+
+    - name: Get current Wazuh agent version
+      ansible.builtin.command: dpkg-query -W -f='${Version}' wazuh-agent
+      register: wazuh_current_version
+      changed_when: false
+
+    - name: Display version info
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ wazuh_current_version.stdout }} → {{ wazuh_agent_target_version }}"
+
+  tasks:
+    - name: Unhold wazuh-agent package
+      ansible.builtin.dpkg_selections:
+        name: wazuh-agent
+        selection: install
+      when: wazuh_current_version.stdout != wazuh_agent_target_version
+
+    - name: Upgrade wazuh-agent
+      ansible.builtin.apt:
+        name: "wazuh-agent={{ wazuh_agent_target_version }}"
+        state: present
+        update_cache: true
+      when: wazuh_current_version.stdout != wazuh_agent_target_version
+      notify: Restart wazuh-agent
+
+    - name: Re-hold wazuh-agent package
+      ansible.builtin.dpkg_selections:
+        name: wazuh-agent
+        selection: hold
+
+  handlers:
+    - name: Restart wazuh-agent
+      ansible.builtin.systemd:
+        name: wazuh-agent
+        state: restarted
+        daemon_reload: true

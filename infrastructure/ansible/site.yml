@@ -1,0 +1,17 @@
+---
+# Master playbook — converge all roles on all FreeIPA-enrolled hosts
+# Usage:
+#   ansible-playbook site.yml                          # full run
+#   ansible-playbook site.yml --limit vault            # single group
+#   ansible-playbook site.yml --tags sshd              # single role
+- name: Converge all baseline roles
+  hosts: freeipa_enrolled
+  roles:
+    - role: common
+      tags: [common]
+    - role: sssd
+      tags: [sssd]
+    - role: sshd
+      tags: [sshd]
+    - role: wazuh_agent
+      tags: [wazuh_agent]

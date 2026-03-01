@@ -1,0 +1,64 @@
+---
+# Upgrade all packages on FreeIPA-enrolled hosts
+# Usage:
+#   ansible-playbook playbooks/apt-upgrade.yml                          # upgrade all
+#   ansible-playbook playbooks/apt-upgrade.yml --limit vault            # upgrade vault only
+#   ansible-playbook playbooks/apt-upgrade.yml -e apt_reboot=true       # reboot if needed
+#   ansible-playbook playbooks/apt-upgrade.yml -e apt_upgrade_type=full # dist-upgrade
+#
+# Runs serially (3 hosts at a time) to avoid upgrading the entire fleet at once.
+- name: Upgrade system packages
+  hosts: freeipa_enrolled
+  serial: 3
+  vars:
+    # "safe" = apt upgrade (only upgrade, no removals)
+    # "full" = apt full-upgrade (may remove obsolete packages)
+    apt_upgrade_type: safe
+    # Set to true to auto-reboot hosts that need it
+    apt_reboot: false
+    # Seconds to wait for host to come back after reboot
+    apt_reboot_timeout: 300
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+
+    - name: Upgrade packages ({{ apt_upgrade_type }})
+      ansible.builtin.apt:
+        upgrade: "{{ apt_upgrade_type }}"
+      register: apt_upgrade_result
+
+    - name: Display upgrade summary
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ apt_upgrade_result.stdout_lines | select('match', '.*upgraded.*newly installed.*') | list | first | default('No changes') }}
+      when: apt_upgrade_result.stdout_lines is defined
+
+    - name: Remove unused dependencies
+      ansible.builtin.apt:
+        autoremove: true
+        purge: true
+
+    - name: Clean apt cache
+      ansible.builtin.apt:
+        autoclean: true
+
+    - name: Check if reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    - name: Display reboot status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ 'REBOOT REQUIRED' if reboot_required.stat.exists else 'No reboot needed' }}"
+
+    - name: Reboot if required and allowed
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ apt_reboot_timeout }}"
+        msg: "Ansible apt-upgrade: rebooting for kernel/system updates"
+      when:
+        - reboot_required.stat.exists
+        - apt_reboot | bool
