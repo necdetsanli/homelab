@@ -1,0 +1,33 @@
+---
+# SSSD role defaults
+# Enforces consistent SSSD configuration across all FreeIPA-enrolled hosts.
+# Does NOT re-template the full sssd.conf (ipa-client-install generates
+# domain-specific settings) — only ensures critical directives are correct.
+
+# ── SSSD services ────────────────────────────────────────────
+# All four are required for full FreeIPA integration:
+#   nss  — name resolution (passwd, group)
+#   pam  — authentication
+#   ssh  — public key lookup via sss_ssh_authorizedkeys
+#   sudo — sudo rules from FreeIPA
+sssd_services:
+  - nss
+  - pam
+  - ssh
+  - sudo
+
+# ── nsswitch.conf entries ────────────────────────────────────
+# Ensure 'sss' is present in these nsswitch databases
+sssd_nsswitch_databases:
+  passwd: "files sss systemd"
+  group: "files sss systemd"
+  shadow: "files sss"
+  sudoers: "files sss"
+
+# ── SSSD cache ───────────────────────────────────────────────
+# Flush SSSD cache after config changes to avoid stale data
+sssd_flush_cache_on_change: true
+
+# ── sudo LDAP provider ──────────────────────────────────────
+# Ensure sudo_provider = ipa is set in the domain section
+sssd_sudo_provider: ipa

@@ -1,0 +1,67 @@
+---
+# ── Validate FreeIPA enrollment ──────────────────────────────
+- name: Check that sssd.conf exists (host is FreeIPA-enrolled)
+  ansible.builtin.stat:
+    path: /etc/sssd/sssd.conf
+  register: sssd_conf_stat
+
+- name: Fail if host is not FreeIPA-enrolled
+  ansible.builtin.fail:
+    msg: "/etc/sssd/sssd.conf not found — is this host enrolled in FreeIPA?"
+  when: not sssd_conf_stat.stat.exists
+
+# ── Detect IPA domain name from sssd.conf ────────────────────
+- name: Get IPA domain section name
+  ansible.builtin.shell: |
+    grep '^\[domain/' /etc/sssd/sssd.conf | head -1 | sed 's/\[domain\///;s/\]//'
+  register: sssd_domain_name
+  changed_when: false
+
+# ── Enforce services line ────────────────────────────────────
+- name: Ensure SSSD services include nss, pam, ssh, sudo
+  ansible.builtin.lineinfile:
+    path: /etc/sssd/sssd.conf
+    regexp: '^services\s*='
+    line: "services = {{ sssd_services | join(', ') }}"
+    insertafter: '^\[sssd\]'
+    backup: true
+  notify:
+    - Restart sssd
+    - Flush sssd cache
+
+# ── Ensure sudo_provider in domain section ───────────────────
+- name: Ensure sudo_provider is set in domain section
+  ansible.builtin.lineinfile:
+    path: /etc/sssd/sssd.conf
+    regexp: '^sudo_provider\s*='
+    line: "sudo_provider = {{ sssd_sudo_provider }}"
+    insertafter: '^\[domain/{{ sssd_domain_name.stdout }}\]'
+    backup: true
+  notify:
+    - Restart sssd
+    - Flush sssd cache
+
+# ── nsswitch.conf ────────────────────────────────────────────
+- name: Ensure nsswitch.conf has sss entries
+  ansible.builtin.lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^{{ item.key }}:'
+    line: "{{ item.key }}:         {{ item.value }}"
+    backup: true
+  loop: "{{ sssd_nsswitch_databases | dict2items }}"
+  notify: Restart sssd
+
+# ── Ensure SSSD is running ───────────────────────────────────
+- name: Enable and start sssd
+  ansible.builtin.systemd:
+    name: sssd
+    state: started
+    enabled: true
+
+# ── Ensure sssd.conf permissions ─────────────────────────────
+- name: Set sssd.conf permissions to 600
+  ansible.builtin.file:
+    path: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: "0600"

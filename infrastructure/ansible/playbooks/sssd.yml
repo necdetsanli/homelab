@@ -1,0 +1,9 @@
+---
+# Standardize SSSD configuration on all FreeIPA-enrolled hosts
+# Usage:
+#   ansible-playbook playbooks/sssd.yml
+#   ansible-playbook playbooks/sssd.yml --limit vault
+- name: Standardize SSSD configuration
+  hosts: freeipa_enrolled
+  roles:
+    - sssd

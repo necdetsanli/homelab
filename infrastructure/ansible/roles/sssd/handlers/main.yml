@@ -1,0 +1,9 @@
+---
+- name: Restart sssd
+  ansible.builtin.systemd:
+    name: sssd
+    state: restarted
+
+- name: Flush sssd cache
+  ansible.builtin.command: sss_cache -E
+  when: sssd_flush_cache_on_change
