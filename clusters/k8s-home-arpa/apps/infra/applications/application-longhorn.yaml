@@ -75,15 +75,17 @@ spec:
     server: "https://kubernetes.default.svc"
     namespace: longhorn-system
   ignoreDifferences:
-    # Longhorn manager injects conversion webhook config, legacy API
-    # versions (v1beta1/v1beta2), and the API server normalises CRD
-    # schemas post-apply.  Ignore the entire versions array + conversion.
+    # Longhorn manager injects conversion webhook config and the API
+    # server normalises CRD schemas post-apply.  Narrowed to specific
+    # sub-fields so structural CRD changes (new versions, served/storage
+    # flags) remain visible in ArgoCD diff.
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
-      jsonPointers:
-        - /spec/conversion
-        - /spec/versions
-        - /status
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.versions[].schema
+        - .spec.versions[].additionalPrinterColumns
+        - .status
   syncPolicy:
     automated:
       prune: true

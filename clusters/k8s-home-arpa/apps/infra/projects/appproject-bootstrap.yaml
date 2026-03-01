@@ -1,3 +1,7 @@
+# NOTE: This AppProject exists in two places:
+# - bootstrap/20-bootstrap-project/ — initial cluster creation (kubectl apply)
+# - apps/infra/projects/ — ArgoCD ongoing management (desired state)
+# The managed version (this file) takes precedence after ArgoCD syncs.
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
