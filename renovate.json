@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate config — tracks Helm chart versions (ArgoCD Applications) and GitHub Actions SHAs.",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "timezone": "Europe/Istanbul",
+  "schedule": ["before 7am on monday"],
+  "labels": ["dependencies"],
+  "reviewers": ["necdetsanli"],
+  "prHourlyLimit": 5,
+  "prConcurrentLimit": 10,
+  "platformAutomerge": false,
+  "packageRules": [
+    {
+      "description": "Group all GitHub Actions updates into a single PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "commitMessageTopic": "GitHub Actions",
+      "labels": ["dependencies", "ci"]
+    },
+    {
+      "description": "Group Grafana stack charts (Grafana, Loki, Mimir, Tempo)",
+      "matchManagers": ["argocd"],
+      "matchPackagePatterns": ["^grafana$", "^loki$", "^mimir-distributed$", "^tempo-distributed$"],
+      "groupName": "grafana-stack",
+      "commitMessageTopic": "Grafana stack charts"
+    },
+    {
+      "description": "Group Elastic stack charts (ECK operator)",
+      "matchManagers": ["argocd"],
+      "matchPackagePatterns": ["^eck-operator$"],
+      "groupName": "elastic-stack",
+      "commitMessageTopic": "Elastic stack charts"
+    },
+    {
+      "description": "Group OpenTelemetry charts",
+      "matchManagers": ["argocd"],
+      "matchPackagePatterns": ["opentelemetry"],
+      "groupName": "opentelemetry",
+      "commitMessageTopic": "OpenTelemetry charts"
+    },
+    {
+      "description": "Pin major version — no auto-major bumps for Helm charts",
+      "matchManagers": ["argocd"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ],
+  "argocd": {
+    "fileMatch": ["clusters/.+/apps/.+/applications/.+\\.yaml$"]
+  }
+}
