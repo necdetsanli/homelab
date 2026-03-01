@@ -25,7 +25,12 @@
     {
       "description": "Group Grafana stack charts (Grafana, Loki, Mimir, Tempo)",
       "matchManagers": ["argocd"],
-      "matchPackagePatterns": ["^grafana$", "^loki$", "^mimir-distributed$", "^tempo-distributed$"],
+      "matchPackagePatterns": [
+        "^grafana$",
+        "^loki$",
+        "^mimir-distributed$",
+        "^tempo-distributed$"
+      ],
       "groupName": "grafana-stack",
       "commitMessageTopic": "Grafana stack charts"
     },

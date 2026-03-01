@@ -136,12 +136,10 @@ terraform.rc
 # Downloaded vendor collections (not your code)
 ansible/collections/ansible_collections/
 
-# Inventory with real hosts — commit templates only
-ansible/inventory/*
-!ansible/inventory/*.example
-infrastructure/ansible/inventory/*
-!infrastructure/ansible/inventory/*.example
-!infrastructure/ansible/inventory/.gitkeep
+# Ansible inventory — safe to commit (IPs are in addresses.env already)
+# Only ignore files with potential secrets (vault passwords, etc.)
+ansible/inventory/*.vault
+infrastructure/ansible/inventory/*.vault
 
 # ------------------------------------------------------------------------------
 # Kubernetes / Helm build artifacts

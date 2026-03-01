@@ -1,0 +1,59 @@
+---
+# Role: sshd
+# Purpose: Standardise SSH daemon configuration across all FreeIPA-enrolled hosts.
+#          - FreeIPA HBAC is the single source of truth for access control
+#          - Removes conflicting drop-ins (cloud-init password overrides)
+#          - Deploys hardening + FreeIPA integration configs
+#
+# Strategy: sshd reads /etc/ssh/sshd_config.d/*.conf in lexical order.
+#   04-ipa.conf        → FreeIPA integration (AuthorizedKeysCommand, GSSAPI)
+#   90-hardening.conf  → Security hardening (no passwords, no root, no forwarding)
+#   50-cloud-init.conf → REMOVED (its PasswordAuthentication yes conflicts with hardening)
+
+- name: Gather sshd drop-in facts
+  ansible.builtin.stat:
+    path: "/etc/ssh/sshd_config.d/{{ item }}"
+  loop: "{{ sshd_remove_dropins }}"
+  register: sshd_dropin_stat
+
+- name: Remove conflicting sshd drop-ins
+  ansible.builtin.file:
+    path: "/etc/ssh/sshd_config.d/{{ item.item }}"
+    state: absent
+  loop: "{{ sshd_dropin_stat.results }}"
+  when: item.stat.exists
+  notify: Restart sshd
+
+- name: Deploy FreeIPA sshd integration config
+  ansible.builtin.template:
+    src: 04-ipa.conf.j2
+    dest: /etc/ssh/sshd_config.d/04-ipa.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: sshd_freeipa_enabled
+  notify: Restart sshd
+
+- name: Deploy sshd hardening config
+  ansible.builtin.template:
+    src: 90-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/90-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart sshd
+
+- name: Validate full sshd configuration
+  ansible.builtin.command:
+    cmd: sshd -t
+  changed_when: false
+
+- name: Ensure sshd is enabled and running
+  ansible.builtin.systemd:
+    name: "{{ sshd_service_name }}"
+    state: started
+    enabled: true
+  vars:
+    sshd_service_name: >-
+      {{ 'ssh' if ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+         else 'sshd' }}

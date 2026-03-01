@@ -1,0 +1,9 @@
+---
+- name: Restart sshd
+  ansible.builtin.systemd:
+    name: "{{ sshd_service_name }}"
+    state: restarted
+  vars:
+    sshd_service_name: >-
+      {{ 'ssh' if ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+         else 'sshd' }}

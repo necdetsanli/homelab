@@ -1,0 +1,9 @@
+# FreeIPA SSH integration — managed by Ansible
+# Do NOT edit manually — changes will be overwritten.
+
+PubkeyAuthentication {{ 'yes' if sshd_pubkey_auth else 'no' }}
+GSSAPIAuthentication {{ 'yes' if sshd_gssapi_auth else 'no' }}
+KerberosAuthentication {{ 'yes' if sshd_kerberos_auth else 'no' }}
+
+AuthorizedKeysCommand {{ sshd_authorized_keys_command }} %u
+AuthorizedKeysCommandUser {{ sshd_authorized_keys_command_user }}

@@ -1,0 +1,22 @@
+# SSH hardening — managed by Ansible
+# Access control: FreeIPA HBAC (not local AllowGroups/AllowUsers)
+# Do NOT edit manually — changes will be overwritten.
+
+# ── Authentication ───────────────────────────────────────────
+PermitRootLogin {{ sshd_permit_root_login }}
+PasswordAuthentication {{ 'yes' if sshd_password_auth else 'no' }}
+KbdInteractiveAuthentication {{ 'yes' if sshd_kbd_interactive_auth else 'no' }}
+ChallengeResponseAuthentication {{ 'yes' if sshd_challenge_response_auth else 'no' }}
+UsePAM {{ 'yes' if sshd_use_pam else 'no' }}
+MaxAuthTries {{ sshd_max_auth_tries }}
+LoginGraceTime {{ sshd_login_grace_time }}
+
+# ── Session ──────────────────────────────────────────────────
+ClientAliveInterval {{ sshd_client_alive_interval }}
+ClientAliveCountMax {{ sshd_client_alive_count_max }}
+
+# ── Restrictions ─────────────────────────────────────────────
+X11Forwarding {{ 'yes' if sshd_x11_forwarding else 'no' }}
+AllowTcpForwarding {{ 'yes' if sshd_allow_tcp_forwarding else 'no' }}
+PermitTunnel {{ 'yes' if sshd_permit_tunnel else 'no' }}
+PermitUserEnvironment {{ 'yes' if sshd_permit_user_environment else 'no' }}

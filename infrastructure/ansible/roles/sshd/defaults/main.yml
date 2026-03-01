@@ -1,0 +1,35 @@
+---
+# SSHD hardening defaults
+# These values produce an enterprise-grade SSH config
+# with FreeIPA HBAC as the single source of truth for access control.
+
+# ── FreeIPA integration ──────────────────────────────────────
+sshd_freeipa_enabled: true
+sshd_authorized_keys_command: /usr/bin/sss_ssh_authorizedkeys
+sshd_authorized_keys_command_user: nobody
+sshd_gssapi_auth: true
+
+# ── Authentication ───────────────────────────────────────────
+sshd_pubkey_auth: true
+sshd_password_auth: false
+sshd_kbd_interactive_auth: false
+sshd_challenge_response_auth: false
+sshd_kerberos_auth: false
+sshd_permit_root_login: "no"
+sshd_max_auth_tries: 3
+sshd_use_pam: true
+
+# ── Session ──────────────────────────────────────────────────
+sshd_client_alive_interval: 300
+sshd_client_alive_count_max: 2
+sshd_login_grace_time: 30
+
+# ── Restrictions ─────────────────────────────────────────────
+sshd_x11_forwarding: false
+sshd_allow_tcp_forwarding: false
+sshd_permit_tunnel: false
+sshd_permit_user_environment: false
+
+# ── Files to remove (conflicting drop-ins) ───────────────────
+sshd_remove_dropins:
+  - 50-cloud-init.conf

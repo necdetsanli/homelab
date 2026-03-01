@@ -1,0 +1,21 @@
+---
+# Playbook: sshd-hardening.yml
+# Purpose: Standardise sshd configuration on all FreeIPA-enrolled hosts.
+#
+# Bootstrap run (first time — svc-ansible key auth not yet working on targets):
+#   ansible-playbook playbooks/sshd-hardening.yml \
+#     -u necdetsanli --ask-pass --ask-become-pass
+#
+# Normal run (after sshd is fixed and key auth works everywhere):
+#   ansible-playbook playbooks/sshd-hardening.yml
+#
+# Single-host test:
+#   ansible-playbook playbooks/sshd-hardening.yml --limit k8s-master-1.home.arpa
+
+- name: Harden sshd on all FreeIPA-enrolled hosts
+  hosts: freeipa_enrolled
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: sshd
