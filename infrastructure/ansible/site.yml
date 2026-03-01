@@ -22,3 +22,10 @@
   tags: [node_exporter]
   roles:
     - node_exporter
+
+# firewall — nftables east-west control (skip K8s — Cilium manages networking)
+- name: Deploy nftables firewall (non-K8s hosts)
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  tags: [firewall]
+  roles:
+    - firewall

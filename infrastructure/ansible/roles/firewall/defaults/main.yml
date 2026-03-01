@@ -1,0 +1,53 @@
+---
+# firewall role defaults — nftables-based host firewall
+# Enforces intra-VLAN east-west traffic control that OPNsense cannot provide
+# (same-VLAN traffic bypasses the firewall at L2).
+
+# ── Chain policies ───────────────────────────────────────────
+firewall_input_policy: "drop"
+firewall_forward_policy: "drop"
+firewall_output_policy: "accept"    # tighten in a future phase
+
+# ── Anti-spoofing ────────────────────────────────────────────
+# Drop packets with forged RFC1918 / loopback / link-local source on non-lo.
+firewall_anti_spoof: true
+
+# ── ICMP ─────────────────────────────────────────────────────
+# Allow ping + path MTU discovery. Disable only if you have a reason.
+firewall_allow_icmp: true
+
+# ── VRRP ─────────────────────────────────────────────────────
+# IP protocol 112 — only needed on keepalived/edge nodes.
+# Set to true in group_vars/edge.yml.
+firewall_allow_vrrp: false
+firewall_vrrp_peers: []
+
+# ── SSH ──────────────────────────────────────────────────────
+# Always-allowed SSH sources (Ansible + admin VPN).
+# Rate-limited to 6 new connections per minute per source IP.
+firewall_trusted_ssh_sources:
+  - "192.168.20.80/32"     # ansible.home.arpa
+  - "10.66.66.2/32"        # WireGuard admin VPN (exact client IP)
+firewall_ssh_rate_limit: "6/minute"
+firewall_ssh_rate_burst: 4
+
+# ── node_exporter (9100) ─────────────────────────────────────
+# Prometheus runs in K8s. Cilium native routing sends pod traffic at L2
+# directly to the target host — bypasses OPNsense. nftables MUST allow it.
+# Inter-VLAN sources (MGMT, SERVERS) are controlled by OPNsense.
+firewall_node_exporter_port: 9100
+firewall_node_exporter_sources:
+  - "10.42.0.0/16"         # K8s pod CIDR (Cilium native routing, L2)
+
+# ── Per-host/group inbound rules ─────────────────────────────
+# Override in group_vars or host_vars. Each item:
+#   port:     int or list of ints (e.g. 8200 or [8200, 8201])
+#   proto:    tcp | udp (for both, add two entries)
+#   sources:  list of CIDR — omit or [] = allow from any source
+#   comment:  human-readable label (appears in nft ruleset)
+firewall_allow_rules: []
+
+# ── Logging ──────────────────────────────────────────────────
+firewall_log_dropped: true
+firewall_log_rate: "5/minute"
+firewall_log_burst: 5

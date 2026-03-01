@@ -1,0 +1,87 @@
+---
+# firewall role — deploy nftables host firewall
+# Targets: FreeIPA-enrolled Debian/Ubuntu hosts (NOT K8s, NOT Alpine)
+# Provides intra-VLAN east-west traffic control.
+
+- name: Skip non-Debian hosts (Alpine LXC)
+  ansible.builtin.meta: end_host
+  when: ansible_os_family != 'Debian'
+
+# ── Dead man's switch (first run only) ──────────────────────
+# On first deployment, nftables has no filter table yet.
+# Schedule an auto-revert: flush ruleset after 5 minutes.
+# If SSH stays up, the job is cancelled at the end of this role.
+# If we get locked out, rules auto-flush and SSH recovers.
+# On subsequent runs the filter table already exists → skip entirely.
+- name: Check if nftables filter table is already active
+  ansible.builtin.command: nft list tables
+  register: _nft_tables_check
+  changed_when: false
+  failed_when: false
+
+- name: Install at daemon for dead man's switch
+  ansible.builtin.apt:
+    name: at
+    state: present
+  when: "'inet filter' not in _nft_tables_check.stdout | default('')"
+
+- name: Schedule dead man's switch (flush nftables in 5 minutes)
+  ansible.builtin.shell: |
+    echo 'nft flush ruleset' | at now + 5 minutes 2>&1
+  register: _deadman_job
+  changed_when: true
+  when: "'inet filter' not in _nft_tables_check.stdout | default('')"
+
+- name: Record dead man's switch job ID
+  ansible.builtin.set_fact:
+    _deadman_job_id: >-
+      {{ _deadman_job.stdout | default('') | regex_search('job\s+(\d+)', '\1') | first | default('') }}
+  when: _deadman_job is not skipped
+
+# ── Main deployment ──────────────────────────────────────────
+- name: Install nftables
+  ansible.builtin.apt:
+    name: nftables
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Deploy nftables ruleset
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "nft -c -f %s"
+  notify: Reload nftables
+
+- name: Enable and start nftables
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# ── Post-deploy validation ───────────────────────────────────
+- name: Verify nftables ruleset is loaded
+  ansible.builtin.command: nft list ruleset
+  register: _nft_ruleset
+  changed_when: false
+
+- name: Assert filter table exists
+  ansible.builtin.assert:
+    that:
+      - "'table inet filter' in _nft_ruleset.stdout"
+    fail_msg: "nftables filter table not loaded — firewall may not be active"
+    success_msg: "nftables filter table active"
+
+# ── Cancel dead man's switch (first run only) ────────────────
+# If we reached this point, SSH is working and the ruleset is loaded.
+# Cancel the scheduled flush so the firewall stays active.
+- name: Cancel dead man's switch
+  ansible.builtin.command: atrm {{ _deadman_job_id }}
+  when:
+    - _deadman_job_id is defined
+    - _deadman_job_id | length > 0
+  changed_when: true

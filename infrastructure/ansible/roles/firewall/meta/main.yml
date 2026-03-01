@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: firewall
+  author: homelab
+  description: >-
+    nftables-based host firewall for intra-VLAN east-west traffic control.
+    OPNsense cannot filter same-VLAN L2 traffic — this role closes that gap.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+    - name: Debian
+      versions:
+        - trixie   # 13
+  galaxy_tags:
+    - firewall
+    - nftables
+    - security
+    - hardening
+dependencies: []

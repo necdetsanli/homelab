@@ -1,0 +1,117 @@
+#!/usr/sbin/nft -f
+# {{ ansible_managed }}
+# Host: {{ inventory_hostname }} ({{ ansible_host }})
+#
+# Base rules are hardcoded here and cannot be accidentally overridden.
+# Per-host/group rules come from firewall_allow_rules (group_vars/host_vars).
+# Policy: input={{ firewall_input_policy }}, forward={{ firewall_forward_policy }}, output={{ firewall_output_policy }}
+
+flush ruleset
+
+table inet filter {
+
+  # ── Named sets (for readability + performance) ─────────────
+  set trusted_ssh {
+    type ipv4_addr
+    flags interval
+    elements = {
+{% for src in firewall_trusted_ssh_sources %}
+      {{ src }}{{ "," if not loop.last else "" }}
+{% endfor %}
+    }
+  }
+
+  set node_exporter_scrapers {
+    type ipv4_addr
+    flags interval
+    elements = {
+{% for src in firewall_node_exporter_sources %}
+      {{ src }}{{ "," if not loop.last else "" }}
+{% endfor %}
+    }
+  }
+
+{% if firewall_allow_vrrp and firewall_vrrp_peers | length > 0 %}
+  set vrrp_peers {
+    type ipv4_addr
+    flags interval
+    elements = {
+{% for src in firewall_vrrp_peers %}
+      {{ src }}{{ "," if not loop.last else "" }}
+{% endfor %}
+    }
+  }
+
+{% endif %}
+  # ── Input chain ────────────────────────────────────────────
+  chain input {
+    type filter hook input priority 0; policy {{ firewall_input_policy }};
+
+    # --- Connection tracking (stateful — most traffic matches here) ---
+    ct state established,related counter accept
+    ct state invalid counter drop comment "drop invalid conntrack state"
+
+    # --- Loopback ---
+    iifname "lo" accept
+
+{% if firewall_anti_spoof | default(true) %}
+    # --- Anti-spoofing ---
+    # Drop packets arriving on non-lo with loopback source.
+    iifname != "lo" ip saddr 127.0.0.0/8 counter drop comment "anti-spoof: loopback on non-lo"
+    iifname != "lo" ip6 saddr ::1/128 counter drop comment "anti-spoof: IPv6 loopback on non-lo"
+
+{% endif %}
+{% if firewall_allow_icmp %}
+    # --- ICMP (ping + path MTU discovery) ---
+    ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable, time-exceeded } counter accept comment "ICMPv4 operational"
+    ip6 nexthdr icmpv6 icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, nd-neighbor-solicit, nd-neighbor-advert, nd-router-solicit, nd-router-advert } counter accept comment "ICMPv6 operational + NDP"
+
+{% endif %}
+{% if firewall_allow_vrrp and firewall_vrrp_peers | length > 0 %}
+    # --- VRRP (keepalived) ---
+    ip protocol vrrp ip saddr @vrrp_peers counter accept comment "VRRP between keepalived peers"
+
+{% endif %}
+    # --- SSH (rate-limited, from trusted management sources only) ---
+    tcp dport 22 ip saddr @trusted_ssh ct state new limit rate {{ firewall_ssh_rate_limit }} burst {{ firewall_ssh_rate_burst }} packets counter accept comment "SSH from Ansible + WireGuard"
+    tcp dport 22 counter drop comment "SSH: over rate-limit or untrusted source"
+
+    # --- node_exporter metrics ---
+    tcp dport {{ firewall_node_exporter_port }} ip saddr @node_exporter_scrapers counter accept comment "Prometheus node_exporter scrape"
+
+{% if firewall_allow_rules | length > 0 %}
+    # --- Host/group-specific rules ---
+{% for rule in firewall_allow_rules %}
+{% if rule.port is number %}
+{% set port_expr = rule.port | string %}
+{% else %}
+{% set port_expr = "{ " + (rule.port | map('string') | join(", ")) + " }" %}
+{% endif %}
+{% if rule.sources | default([]) | length > 0 %}
+{% for src in rule.sources %}
+    {{ rule.proto }} dport {{ port_expr }} ip saddr {{ src }} counter accept comment "{{ rule.comment }}"
+{% endfor %}
+{% else %}
+    {{ rule.proto }} dport {{ port_expr }} counter accept comment "{{ rule.comment }}"
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% if firewall_log_dropped %}
+    # --- Log + count remaining drops (rate-limited to prevent log flooding) ---
+    limit rate {{ firewall_log_rate }} burst {{ firewall_log_burst }} packets log prefix "nftables-drop: " counter
+{% endif %}
+    counter comment "count total policy drops"
+  }
+
+  # ── Forward chain (not a router) ──────────────────────────
+  chain forward {
+    type filter hook forward priority 0; policy {{ firewall_forward_policy }};
+    counter comment "count forward drops"
+  }
+
+  # ── Output chain ──────────────────────────────────────────
+  chain output {
+    type filter hook output priority 0; policy {{ firewall_output_policy }};
+  }
+}

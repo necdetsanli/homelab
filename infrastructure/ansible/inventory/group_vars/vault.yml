@@ -1,0 +1,20 @@
+---
+# Vault cluster — firewall rules
+# Ports: 8200 (API), 8201 (cluster peering)
+firewall_allow_rules:
+  - port: 8200
+    proto: tcp
+    sources:
+      - "192.168.20.20/32"     # edge-1
+      - "192.168.20.21/32"     # edge-2
+      - "192.168.20.22/32"     # edge VIP (keepalived)
+      - "10.42.0.0/16"         # K8s pods (cert-manager, apps)
+    comment: "Vault API"
+
+  - port: 8201
+    proto: tcp
+    sources:
+      - "192.168.20.25/32"     # vault-1
+      - "192.168.20.26/32"     # vault-2
+      - "192.168.20.27/32"     # vault-3
+    comment: "Vault cluster peering"

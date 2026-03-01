@@ -1,0 +1,11 @@
+---
+# Deploy / update nftables host firewall on FreeIPA-enrolled hosts
+# Excludes K8s nodes (Cilium manages networking) and Alpine LXCs.
+# Usage:
+#   ansible-playbook playbooks/firewall.yml
+#   ansible-playbook playbooks/firewall.yml --limit vault
+#   ansible-playbook playbooks/firewall.yml --check --diff   # dry-run
+- name: Deploy nftables firewall
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  roles:
+    - firewall

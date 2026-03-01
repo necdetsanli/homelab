@@ -1,0 +1,11 @@
+---
+# Nextcloud — firewall rules
+# Port: 11000 (Nextcloud container reverse proxy port)
+firewall_allow_rules:
+  - port: 11000
+    proto: tcp
+    sources:
+      - "192.168.20.20/32"     # edge-1
+      - "192.168.20.21/32"     # edge-2
+      - "192.168.20.22/32"     # edge VIP
+    comment: "Nextcloud via HAProxy"

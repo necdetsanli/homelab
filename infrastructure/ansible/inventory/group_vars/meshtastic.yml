@@ -1,0 +1,11 @@
+---
+# Meshtastic LXC — firewall rules
+# Port: 8080 (web UI via HAProxy)
+firewall_allow_rules:
+  - port: 8080
+    proto: tcp
+    sources:
+      - "192.168.20.20/32"     # edge-1
+      - "192.168.20.21/32"     # edge-2
+      - "192.168.20.22/32"     # edge VIP
+    comment: "Meshtastic web UI via HAProxy"

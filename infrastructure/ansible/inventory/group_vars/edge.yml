@@ -1,0 +1,28 @@
+---
+# Edge nodes (HAProxy + keepalived) — firewall rules
+# Ports: 80 (HTTP redirect), 443 (HTTPS)
+# Protocol: VRRP (IP protocol 112) between peers
+# SSH: peers need mutual SSH for certsync (rsync over SSH)
+
+firewall_allow_vrrp: true
+firewall_vrrp_peers:
+  - "192.168.20.20/32"    # edge-1
+  - "192.168.20.21/32"    # edge-2
+
+# Extend trusted SSH sources — peers rsync certs via certsync user
+firewall_trusted_ssh_sources:
+  - "192.168.20.80/32"     # ansible.home.arpa
+  - "10.66.66.2/32"        # WireGuard admin VPN
+  - "192.168.20.20/32"     # edge-1 (certsync)
+  - "192.168.20.21/32"     # edge-2 (certsync)
+
+firewall_allow_rules:
+  - port: 80
+    proto: tcp
+    sources: []             # any — public-facing HTTP→HTTPS redirect
+    comment: "HTTP (redirect to HTTPS)"
+
+  - port: 443
+    proto: tcp
+    sources: []             # any — public-facing TLS termination
+    comment: "HTTPS"

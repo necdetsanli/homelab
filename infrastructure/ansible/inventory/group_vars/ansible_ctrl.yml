@@ -1,0 +1,5 @@
+---
+# Ansible controller — firewall rules
+# No extra inbound ports needed — Ansible initiates outbound connections.
+# SSH access is already covered by the base rules (trusted_ssh_sources).
+firewall_allow_rules: []

@@ -1,0 +1,11 @@
+---
+# Rancher — firewall rules
+# Port: 443 (HTTPS UI via HAProxy)
+firewall_allow_rules:
+  - port: 443
+    proto: tcp
+    sources:
+      - "192.168.20.20/32"     # edge-1
+      - "192.168.20.21/32"     # edge-2
+      - "192.168.20.22/32"     # edge VIP
+    comment: "Rancher HTTPS via HAProxy"
