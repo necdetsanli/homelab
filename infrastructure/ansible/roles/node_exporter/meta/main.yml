@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: node_exporter
+  author: homelab
+  description: >-
+    Install and configure Prometheus node_exporter from GitHub releases.
+    Static binary, dedicated system user, hardened systemd unit.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+        - jammy    # 22.04
+    - name: Debian
+      versions:
+        - bookworm # 12
+  galaxy_tags:
+    - monitoring
+    - prometheus
+    - node_exporter
+    - metrics
+dependencies: []

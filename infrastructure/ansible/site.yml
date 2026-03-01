@@ -15,3 +15,5 @@
       tags: [sshd]
     - role: wazuh_agent
       tags: [wazuh_agent]
+    - role: node_exporter
+      tags: [node_exporter]

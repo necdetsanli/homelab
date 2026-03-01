@@ -1,0 +1,35 @@
+---
+# node_exporter role defaults
+
+# Version to install (pinned)
+node_exporter_version: "1.10.2"
+
+# Checksum for linux-amd64 tarball (SHA256)
+# https://github.com/prometheus/node_exporter/releases
+node_exporter_checksum: "sha256:c46e5b6f53948477ff3a19d97c58307394a29fe64a01905646f026ddc32cb65b"
+
+# Listen address — bind to the host's inventory IP only.
+# This prevents exposure on unintended interfaces.
+# Override to "0.0.0.0:9100" if multi-interface scraping is needed,
+# or "127.0.0.1:9100" for local-only (e.g. Grafana Alloy sidecar).
+node_exporter_listen_address: "{{ ansible_host }}:9100"
+
+# Extra CLI flags (e.g. enabled/disabled collectors)
+node_exporter_extra_args: ""
+
+# Dedicated system user/group
+node_exporter_user: "node_exporter"
+node_exporter_group: "node_exporter"
+
+# Install paths
+node_exporter_install_dir: "/usr/local/bin"
+node_exporter_textfile_dir: "/var/lib/node_exporter/textfile_collector"
+
+# Disabled collectors (save CPU on LXC / small hosts).
+# Override per-group in inventory if needed.
+node_exporter_disabled_collectors: []
+
+# Enabled collectors beyond the defaults (if any).
+node_exporter_enabled_collectors:
+  - systemd
+  - textfile

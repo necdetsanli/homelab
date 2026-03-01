@@ -1,0 +1,9 @@
+---
+# Deploy / upgrade Prometheus node_exporter on all FreeIPA-enrolled hosts
+# Usage:
+#   ansible-playbook playbooks/node-exporter.yml
+#   ansible-playbook playbooks/node-exporter.yml --limit vault
+- name: Deploy node_exporter
+  hosts: freeipa_enrolled
+  roles:
+    - node_exporter
