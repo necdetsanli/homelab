@@ -88,10 +88,8 @@ spec:
                   timeField: "@timestamp"
                   tlsCACert: $__file{/etc/grafana/secrets/vault-ca-bundle/ca.crt}
                 secureJsonData:
-                  # ECK auto-generates 'elastic' user password in Secret:
-                  # homelab-es-elastic-user (logging namespace).
-                  # TODO: Sync ES credentials via VSO for fully automated rotation.
-                  basicAuthPassword: ""
+                  # ES password synced from Vault via VSO (grafana-es-credentials Secret).
+                  basicAuthPassword: $__file{/etc/grafana/secrets/grafana-es-credentials/es-password}
         # Mount Vault root CA for TLS verification of Elasticsearch datasource.
         # The vault-ca-bundle Secret is created by the vault-ca-bundle Application
         # (kustomize overlay → monitoring namespace).
@@ -99,6 +97,10 @@ spec:
           - name: vault-ca-bundle
             secretName: vault-ca-bundle
             mountPath: /etc/grafana/secrets/vault-ca-bundle
+            readOnly: true
+          - name: grafana-es-credentials
+            secretName: grafana-es-credentials
+            mountPath: /etc/grafana/secrets/grafana-es-credentials
             readOnly: true
         # Homelab-sized resource limits
         resources:
