@@ -1,11 +1,12 @@
 ---
 # Rancher — firewall rules
-# Port: 443 (HTTPS UI via HAProxy)
+# Port: 443 (HTTPS UI via HAProxy + K8s cluster agent)
 firewall_allow_rules:
   - port: 443
     proto: tcp
     sources:
-      - "192.168.20.20/32"     # edge-1
-      - "192.168.20.21/32"     # edge-2
-      - "192.168.20.22/32"     # edge VIP
-    comment: "Rancher HTTPS via HAProxy"
+      - "192.168.20.20/32"     # edge-1 (HAProxy)
+      - "192.168.20.21/32"     # edge-2 (HAProxy)
+      - "192.168.20.22/32"     # edge VIP (HAProxy)
+      - "10.42.0.0/16"         # K8s pods — cattle-cluster-agent (Cilium L2)
+    comment: "Rancher HTTPS (HAProxy + cluster agent)"
