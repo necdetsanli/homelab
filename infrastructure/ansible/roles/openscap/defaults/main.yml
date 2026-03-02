@@ -7,7 +7,7 @@
 # Debian: ssg-debian provides native Debian SCAP content.
 openscap_packages: >-
   {{
-    ['openscap-scanner', 'ssg-debian', 'bzip2'] +
+    ['openscap-scanner', 'openscap-common', 'ssg-debian', 'bzip2'] +
     (['ssg-debderived'] if ansible_distribution == 'Ubuntu' else [])
   }}
 
@@ -20,11 +20,20 @@ openscap_packages: >-
 openscap_content: ""
 
 # XCCDF profile to evaluate.
-# Common choices:
+# Ubuntu provides CIS benchmarks via ssg-debderived:
 #   xccdf_org.ssgproject.content_profile_cis_level1_server
 #   xccdf_org.ssgproject.content_profile_cis_level2_server
-#   xccdf_org.ssgproject.content_profile_stig
-openscap_profile: "xccdf_org.ssgproject.content_profile_cis_level1_server"
+# Debian (ssg-debian) provides:
+#   xccdf_org.ssgproject.content_profile_standard
+#   xccdf_org.ssgproject.content_profile_anssi_np_nt28_average (ANSSI)
+# Auto-detected per distribution. Override in group_vars/host_vars.
+openscap_profile: >-
+  {{
+    'xccdf_org.ssgproject.content_profile_cis_level1_server'
+    if ansible_distribution == 'Ubuntu'
+    else
+    'xccdf_org.ssgproject.content_profile_standard'
+  }}
 
 # Optional: path to a tailoring file (leave empty to skip)
 openscap_tailoring_file: ""
