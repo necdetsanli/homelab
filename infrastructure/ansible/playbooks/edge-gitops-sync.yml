@@ -1,0 +1,30 @@
+---
+# Manually trigger GitOps config sync on edge nodes
+# Runs the same edge-gitops-sync.service that the 5-minute timer triggers,
+# but immediately — useful after pushing config changes to main.
+#
+# Usage:
+#   ansible-playbook playbooks/edge-gitops-sync.yml
+#   ansible-playbook playbooks/edge-gitops-sync.yml --limit edge-1.home.arpa
+- name: Trigger edge GitOps sync
+  hosts: edge
+  become: true
+  serial: 1  # Roll one node at a time to avoid both edges reloading simultaneously
+
+  tasks:
+    - name: Run edge-gitops-sync service
+      ansible.builtin.systemd:
+        name: edge-gitops-sync.service
+        state: started
+        no_block: false
+      register: _sync_unit
+
+    - name: Get sync output from journal
+      ansible.builtin.command:
+        cmd: journalctl -u edge-gitops-sync.service --since "-60s" --no-pager -o cat
+      register: _sync_log
+      changed_when: false
+
+    - name: Show sync result
+      ansible.builtin.debug:
+        msg: "{{ _sync_log.stdout_lines }}"
