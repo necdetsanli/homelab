@@ -1,0 +1,133 @@
+---
+# openscap role — install scanner, evaluate XCCDF profile, fetch report
+# Targets: Ubuntu/Debian hosts enrolled in FreeIPA
+# Method: distro packages (openscap-scanner + ssg-debian/ssg-debderived)
+
+# ── Install packages ─────────────────────────────────────────
+- name: Install OpenSCAP packages
+  ansible.builtin.apt:
+    name: "{{ openscap_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Verify oscap binary is available
+  ansible.builtin.command: oscap --version
+  register: _oscap_version
+  changed_when: false
+
+- name: Display OpenSCAP version
+  ansible.builtin.debug:
+    msg: "{{ _oscap_version.stdout_lines[0] | default('unknown') }}"
+
+# ── Verify SCAP content exists ───────────────────────────────
+- name: Check SCAP data-stream file exists
+  ansible.builtin.stat:
+    path: "{{ openscap_content }}"
+  register: _scap_content
+
+- name: Fail if SCAP content not found
+  ansible.builtin.fail:
+    msg: >-
+      SCAP data-stream not found at {{ openscap_content }}.
+      Verify the correct ssg-* package is installed and the path is accurate
+      for this OS version.
+  when: not _scap_content.stat.exists
+
+# ── Prepare results directory ────────────────────────────────
+- name: Create results directory
+  ansible.builtin.file:
+    path: "{{ openscap_results_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+# ── Build timestamp for filenames ────────────────────────────
+- name: Set scan timestamp fact
+  ansible.builtin.set_fact:
+    _oscap_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+
+# ── Run XCCDF evaluation ────────────────────────────────────
+- name: Run OpenSCAP XCCDF evaluation
+  ansible.builtin.command: >-
+    oscap xccdf eval
+    --profile {{ openscap_profile }}
+    {% if openscap_tailoring_file | default('') | length > 0 %}
+    --tailoring-file {{ openscap_tailoring_file }}
+    {% endif %}
+    --results {{ openscap_results_dir }}/results-{{ _oscap_timestamp }}.xml
+    --report {{ openscap_results_dir }}/report-{{ _oscap_timestamp }}.html
+    {{ openscap_content }}
+  register: _oscap_eval
+  # oscap returns:
+  #   0 = all rules pass
+  #   1 = error
+  #   2 = at least one rule failed/not-checked
+  failed_when: _oscap_eval.rc == 1
+  changed_when: false
+
+- name: Display scan summary
+  ansible.builtin.debug:
+    msg: >-
+      OpenSCAP scan completed on {{ inventory_hostname }}
+      (exit code: {{ _oscap_eval.rc }}).
+      Report: {{ openscap_results_dir }}/report-{{ _oscap_timestamp }}.html
+
+# ── Fail on findings (optional) ─────────────────────────────
+- name: Fail if findings detected and openscap_fail_on_findings is true
+  ansible.builtin.fail:
+    msg: >-
+      OpenSCAP evaluation returned exit code {{ _oscap_eval.rc }},
+      indicating one or more compliance findings.
+      Review the report for details.
+  when:
+    - openscap_fail_on_findings
+    - _oscap_eval.rc != 0
+
+# ── Fetch report to controller ───────────────────────────────
+- name: Create local report directory on controller
+  ansible.builtin.file:
+    path: "{{ openscap_fetch_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: openscap_fetch_report
+
+- name: Fetch HTML report to controller
+  ansible.builtin.fetch:
+    src: "{{ openscap_results_dir }}/report-{{ _oscap_timestamp }}.html"
+    dest: "{{ openscap_fetch_dir }}/{{ inventory_hostname }}-report-{{ _oscap_timestamp }}.html"
+    flat: true
+  when: openscap_fetch_report
+
+# ── Cleanup old results (keep last 5) ───────────────────────
+- name: List existing result files
+  ansible.builtin.find:
+    paths: "{{ openscap_results_dir }}"
+    patterns: "results-*.xml"
+    file_type: file
+  register: _oscap_result_files
+
+- name: Remove old result files (keep newest 5)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ (_oscap_result_files.files | sort(attribute='mtime') | map(attribute='path') | list)[:-5] }}"
+  when: _oscap_result_files.files | length > 5
+
+- name: List existing report files
+  ansible.builtin.find:
+    paths: "{{ openscap_results_dir }}"
+    patterns: "report-*.html"
+    file_type: file
+  register: _oscap_report_files
+
+- name: Remove old report files (keep newest 5)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ (_oscap_report_files.files | sort(attribute='mtime') | map(attribute='path') | list)[:-5] }}"
+  when: _oscap_report_files.files | length > 5

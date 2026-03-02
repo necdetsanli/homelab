@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  namespace: homelab
+  role_name: openscap
+  author: necdetsanli
+  description: >-
+    Install OpenSCAP scanner and SCAP Security Guide content from distro
+    packages, then evaluate the host against a configurable XCCDF profile
+    (default: CIS Level 1 Server for Ubuntu 24.04). Generates an HTML
+    compliance report and fetches it to the Ansible controller for review.
+    Supports profile selection, result archival, and tailoring file
+    overrides. Designed for periodic audit runs via cron or systemd timer.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+    - name: Debian
+      versions:
+        - trixie   # 13
+  galaxy_tags:
+    - security
+    - compliance
+    - openscap
+    - audit
+    - cis
+    - stig
+    - hardening
+dependencies: []

@@ -1,0 +1,20 @@
+---
+# ansible-lint configuration for homelab infrastructure.
+# Run:  ansible-lint          (from infrastructure/ansible/)
+# Docs: https://ansible.readthedocs.io/projects/lint/configuring/
+
+profile: production   # strictest built-in profile
+
+# Paths to lint (relative to this file)
+exclude_paths:
+  - .cache/
+
+# Rules to skip globally — add sparingly with a justification comment.
+skip_list:
+  - yaml[truthy]          # We use bare true/false consistently, not "yes"/"no"
+
+# Treat all warnings as errors in CI
+strict: true
+
+# Offline mode — don't fetch Galaxy metadata during lint
+offline: true

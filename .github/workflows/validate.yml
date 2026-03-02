@@ -69,3 +69,21 @@ jobs:
         run: |
           find infrastructure/edge -name '*.sh' -o -name 'haproxy-certs-*' \
             | xargs shellcheck --severity=warning
+
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install ansible-lint
+        run: pip install --quiet ansible-lint
+
+      - name: Install Ansible collections
+        working-directory: infrastructure/ansible
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run ansible-lint
+        working-directory: infrastructure/ansible
+        run: ansible-lint

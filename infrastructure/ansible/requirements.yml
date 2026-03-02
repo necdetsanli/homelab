@@ -1,0 +1,17 @@
+---
+# Ansible Galaxy collection dependencies for homelab infrastructure.
+# Install with:
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-galaxy collection install -r requirements.yml --force   # upgrade
+#
+# These collections ship with ansible-core but are pinned here for
+# reproducibility on a fresh controller bootstrap.
+collections:
+  - name: ansible.builtin
+    version: ">=2.16.0"      # ansible-core — systemd_service, pipefail, etc.
+
+  - name: ansible.posix
+    version: ">=1.5.0"       # sysctl (common role)
+
+  - name: community.general
+    version: ">=8.0.0"       # timezone (common role)

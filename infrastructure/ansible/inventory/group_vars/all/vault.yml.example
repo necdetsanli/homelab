@@ -1,0 +1,14 @@
+---
+# Ansible Vault-encrypted secrets shared across all hosts.
+#
+# This is an EXAMPLE — copy and encrypt before use:
+#   cp vault.yml.example vault.yml
+#   ansible-vault encrypt inventory/group_vars/all/vault.yml
+#
+# The encrypted vault.yml is safe to commit. This .example file
+# documents the expected variables without exposing real values.
+
+# --- Vault PKI AppRole ---
+# Used by vault_cert role to authenticate to HashiCorp Vault.
+# Rotate via: vault write -f auth/approle/role/ansible-vault-cert/secret-id
+vault_cert_approle_secret_id: "REPLACE_WITH_ACTUAL_SECRET_ID"

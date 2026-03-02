@@ -1,0 +1,52 @@
+---
+# openscap role defaults
+
+# ── Packages ─────────────────────────────────────────────────
+# Distro packages to install — auto-detected per OS.
+# Ubuntu: ssg-debderived provides Ubuntu-specific overlays.
+# Debian: ssg-debian provides native Debian SCAP content.
+openscap_packages: >-
+  {{
+    ['openscap-scanner', 'ssg-debian', 'bzip2'] +
+    (['ssg-debderived'] if ansible_distribution == 'Ubuntu' else [])
+  }}
+
+# ── SCAP content ─────────────────────────────────────────────
+# Path to the SCAP data-stream XML on the target host.
+# Auto-detected per distribution. Override in group_vars/host_vars if needed.
+#   Ubuntu 24.04 → ssg-ubuntu2404-ds.xml  (from ssg-debderived)
+#   Debian 13    → ssg-debian13-ds.xml    (from ssg-debian)
+#   Debian 12    → ssg-debian12-ds.xml    (from ssg-debian)
+openscap_content: >-
+  {{
+    '/usr/share/xml/scap/ssg/content/ssg-ubuntu' ~ ansible_distribution_version | replace('.', '') ~ '-ds.xml'
+    if ansible_distribution == 'Ubuntu'
+    else
+    '/usr/share/xml/scap/ssg/content/ssg-debian' ~ ansible_distribution_major_version ~ '-ds.xml'
+  }}
+
+# XCCDF profile to evaluate.
+# Common choices:
+#   xccdf_org.ssgproject.content_profile_cis_level1_server
+#   xccdf_org.ssgproject.content_profile_cis_level2_server
+#   xccdf_org.ssgproject.content_profile_stig
+openscap_profile: "xccdf_org.ssgproject.content_profile_cis_level1_server"
+
+# Optional: path to a tailoring file (leave empty to skip)
+openscap_tailoring_file: ""
+
+# ── Output ───────────────────────────────────────────────────
+# Directory on the target host where results are stored
+openscap_results_dir: "/var/lib/openscap/results"
+
+# Directory on the controller to fetch reports to
+openscap_fetch_dir: "{{ playbook_dir }}/../reports/openscap"
+
+# Whether to fetch the HTML report back to the controller
+openscap_fetch_report: true
+
+# ── Behaviour ────────────────────────────────────────────────
+# If true, the role will fail the play when oscap returns a non-zero
+# exit code (i.e. one or more rules failed). Set to false for
+# audit-only runs where you want visibility without blocking.
+openscap_fail_on_findings: false

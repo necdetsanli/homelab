@@ -1,0 +1,12 @@
+---
+# Run OpenSCAP compliance audit on FreeIPA-enrolled hosts
+# K8s nodes are excluded — use kube-bench (CronJob) for CIS K8s benchmarks.
+# Generates per-host HTML reports and fetches them to the controller.
+# Usage:
+#   ansible-playbook playbooks/audit.yml
+#   ansible-playbook playbooks/audit.yml --limit vault
+#   ansible-playbook playbooks/audit.yml -e openscap_fail_on_findings=true
+- name: OpenSCAP compliance audit
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  roles:
+    - openscap
