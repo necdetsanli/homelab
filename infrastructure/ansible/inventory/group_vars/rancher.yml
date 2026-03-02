@@ -5,13 +5,13 @@
 # Forward chain must allow pod traffic via CNI bridge (flannel).
 firewall_k3s_host: true
 
-# Port: 443 (HTTPS UI via HAProxy + K8s cluster agent)
+# Port: 30443 (HTTPS NodePort — Rancher on k3s via HAProxy + K8s cluster agent)
 firewall_allow_rules:
-  - port: 443
+  - port: 30443
     proto: tcp
     sources:
       - "192.168.20.20/32"     # edge-1 (HAProxy)
       - "192.168.20.21/32"     # edge-2 (HAProxy)
       - "192.168.20.22/32"     # edge VIP (HAProxy)
       - "10.42.0.0/16"         # K8s pods — cattle-cluster-agent (Cilium L2)
-    comment: "Rancher HTTPS (HAProxy + cluster agent)"
+    comment: "Rancher HTTPS NodePort (HAProxy + cluster agent)"
