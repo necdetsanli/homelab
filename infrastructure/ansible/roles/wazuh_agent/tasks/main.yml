@@ -51,6 +51,49 @@
     name: wazuh-agent
     selection: hold
 
+# ── OpenSCAP wodle integration ───────────────────────────────
+- name: Configure OpenSCAP wodle in ossec.conf
+  when: wazuh_openscap_enabled
+  block:
+    - name: Discover SCAP data-stream for Wazuh wodle
+      ansible.builtin.find:
+        paths: /usr/share/xml/scap/ssg/content
+        patterns: >-
+          {{ 'ssg-ubuntu*-ds.xml' if ansible_distribution == 'Ubuntu'
+             else 'ssg-debian*-ds.xml' }}
+      register: _wazuh_scap_files
+
+    - name: Set SCAP content path fact
+      ansible.builtin.set_fact:
+        _wazuh_scap_content: >-
+          {{ (_wazuh_scap_files.files | sort(attribute='path') | last).path }}
+      when: _wazuh_scap_files.files | length > 0
+
+    - name: Set SCAP profile fact
+      ansible.builtin.set_fact:
+        _wazuh_scap_profile: >-
+          {{ 'xccdf_org.ssgproject.content_profile_cis_level1_server'
+             if ansible_distribution == 'Ubuntu'
+             else 'xccdf_org.ssgproject.content_profile_standard' }}
+
+    - name: Inject open-scap wodle into ossec.conf
+      ansible.builtin.blockinfile:
+        path: /var/ossec/etc/ossec.conf
+        marker: "  <!-- {mark} ANSIBLE MANAGED: open-scap wodle -->"
+        insertbefore: "</ossec_config>"
+        block: |
+          <wodle name="open-scap">
+            <disabled>no</disabled>
+            <timeout>{{ wazuh_openscap_timeout }}</timeout>
+            <interval>{{ wazuh_openscap_interval }}</interval>
+            <scan-on-start>{{ 'yes' if wazuh_openscap_scan_on_start else 'no' }}</scan-on-start>
+            <content type="xccdf" path="{{ _wazuh_scap_content }}">
+              <profile>{{ _wazuh_scap_profile }}</profile>
+            </content>
+          </wodle>
+      notify: Restart wazuh-agent
+      when: _wazuh_scap_content is defined
+
 # ── Enable and start service ─────────────────────────────────
 - name: Enable and start wazuh-agent
   ansible.builtin.systemd:

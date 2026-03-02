@@ -6,3 +6,11 @@ wazuh_agent_version: "4.14.3-1"
 wazuh_repo_url: "https://packages.wazuh.com/4.x/apt/"
 wazuh_gpg_key_url: "https://packages.wazuh.com/key/GPG-KEY-WAZUH"
 wazuh_gpg_keyring: "/usr/share/keyrings/wazuh.gpg"
+
+# ── OpenSCAP wodle integration ───────────────────────────────
+# Enable the open-scap wodle in ossec.conf for continuous compliance scanning.
+# Requires the openscap role to be applied first (installs scanner + SSG content).
+wazuh_openscap_enabled: false
+wazuh_openscap_interval: "1d"
+wazuh_openscap_timeout: 1800
+wazuh_openscap_scan_on_start: true

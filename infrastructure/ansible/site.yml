@@ -29,3 +29,10 @@
   tags: [firewall]
   roles:
     - firewall
+
+# openscap — CIS/standard compliance scanning (skip K8s + Rancher)
+- name: Deploy OpenSCAP compliance scanner
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers:!rancher
+  tags: [openscap]
+  roles:
+    - openscap
