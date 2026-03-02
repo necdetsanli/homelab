@@ -116,6 +116,16 @@ table inet filter {
     iifname "{{ firewall_docker_bridge }}" counter accept comment "docker: outbound from containers"
     oifname "{{ firewall_docker_bridge }}" counter accept comment "docker: inbound to containers"
 {% endif %}
+{% if firewall_k3s_host | default(false) %}
+    # --- k3s native forwarding ---
+    # k3s pods route through FORWARD via CNI bridge (flannel).
+    ct state established,related counter accept comment "k3s: return traffic"
+    ct state invalid counter drop comment "k3s: drop invalid conntrack"
+    iifname "{{ firewall_k3s_cni_bridge }}" counter accept comment "k3s: outbound from pods"
+    oifname "{{ firewall_k3s_cni_bridge }}" counter accept comment "k3s: inbound to pods"
+    iifname "{{ firewall_k3s_flannel_iface }}" counter accept comment "k3s: flannel VXLAN in"
+    oifname "{{ firewall_k3s_flannel_iface }}" counter accept comment "k3s: flannel VXLAN out"
+{% endif %}
     counter comment "count forward drops"
   }
 

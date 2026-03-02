@@ -1,9 +1,9 @@
 ---
 # Rancher — firewall rules
 
-# Docker host — embedded k3s runs containers via docker0 bridge.
-# Forward chain must allow container traffic (DNS, image pulls, pod networking).
-firewall_docker_host: true
+# k3s host — Rancher runs on native k3s (not Docker).
+# Forward chain must allow pod traffic via CNI bridge (flannel).
+firewall_k3s_host: true
 
 # Port: 443 (HTTPS UI via HAProxy + K8s cluster agent)
 firewall_allow_rules:

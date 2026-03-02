@@ -47,6 +47,14 @@ firewall_node_exporter_sources:
 firewall_docker_host: false
 firewall_docker_bridge: "docker0"
 
+# ── k3s host forwarding ──────────────────────────────────────
+# Enable on hosts running k3s natively (not in Docker).
+# k3s pods use the kernel FORWARD chain via CNI (flannel cni0 bridge).
+# This adds conntrack + cni0/flannel interface rules to the forward chain.
+firewall_k3s_host: false
+firewall_k3s_cni_bridge: "cni0"
+firewall_k3s_flannel_iface: "flannel.1"
+
 # ── Per-host/group inbound rules ─────────────────────────────
 # Override in group_vars or host_vars. Each item:
 #   port:     int or list of ints (e.g. 8200 or [8200, 8201])
