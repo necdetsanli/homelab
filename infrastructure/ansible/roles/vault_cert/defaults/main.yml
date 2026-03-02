@@ -23,7 +23,7 @@ vault_cert_validate_certs: true
 vault_cert_auth_method: "approle"         # "approle" or "token"
 vault_cert_approle_mount: "approle"       # auth method mount path
 vault_cert_approle_role_id: ""            # AppRole role_id (from Vault)
-vault_cert_approle_secret_id: "{{ lookup('env', 'VAULT_SECRET_ID') }}"
+vault_cert_approle_secret_id: ""            # Set via ansible-vault encrypted group_vars/all/vault.yml
 
 # ── Auth: Token (fallback) ───────────────────────────────────
 # Only used when vault_cert_auth_method == "token".

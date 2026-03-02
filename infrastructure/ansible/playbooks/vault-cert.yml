@@ -12,9 +12,9 @@
 #     (or set vault_cert_validate_certs: false in group_vars)
 #
 # Usage (AppRole — recommended):
-#   export VAULT_SECRET_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 #   ansible-playbook playbooks/vault-cert.yml --limit rancher
 #   ansible-playbook playbooks/vault-cert.yml --limit nextcloud
+#   # secret_id is decrypted from inventory/group_vars/all/vault.yml
 #
 # Usage (token — fallback):
 #   ansible-playbook playbooks/vault-cert.yml --limit rancher \

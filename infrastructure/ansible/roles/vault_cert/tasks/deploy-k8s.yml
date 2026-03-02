@@ -58,7 +58,7 @@
           - yaml
       register: _tls_secret_manifest
       changed_when: false
-      no_log: true
+      # no_log: true  # temporarily disabled for debugging
 
     - name: "Apply TLS secret: {{ vault_cert_k8s_namespace }}/{{ vault_cert_k8s_tls_secret }}"
       ansible.builtin.command:
