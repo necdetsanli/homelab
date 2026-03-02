@@ -1,0 +1,75 @@
+---
+# vault_cert role — main task file
+#
+# 1. Validate inputs
+# 2. Issue certificate from Vault PKI (delegated to Ansible controller)
+# 3. Fetch root CA from Vault (public endpoint, no auth needed)
+# 4. Deploy to target host (K8s secrets or files)
+
+# ── Validation ───────────────────────────────────────────────
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - vault_cert_common_name | length > 0
+      - vault_cert_token | length > 0
+    fail_msg: >-
+      vault_cert_common_name must be set and VAULT_TOKEN must be exported
+      (or pass -e vault_cert_token=hvs.xxx)
+    success_msg: "Issuing certificate for {{ vault_cert_common_name }}"
+
+# ── Issue certificate from Vault PKI ────────────────────────
+- name: "Issue certificate from Vault PKI: {{ vault_cert_common_name }}"
+  ansible.builtin.uri:
+    url: "{{ vault_cert_addr }}/v1/{{ vault_cert_pki_mount }}/issue/{{ vault_cert_pki_role }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_cert_token }}"
+    body_format: json
+    body:
+      common_name: "{{ vault_cert_common_name }}"
+      alt_names: "{{ ([vault_cert_common_name] + vault_cert_alt_names) | unique | join(',') }}"
+      ttl: "{{ vault_cert_ttl }}"
+    status_code: 200
+    validate_certs: "{{ vault_cert_validate_certs }}"
+  delegate_to: localhost
+  become: false
+  register: _vault_issue_response
+  no_log: true
+
+# ── Fetch root CA (public, unauthenticated endpoint) ────────
+- name: Fetch root CA from Vault
+  ansible.builtin.uri:
+    url: "{{ vault_cert_addr }}/v1/{{ vault_cert_root_pki_mount }}/ca/pem"
+    method: GET
+    return_content: true
+    validate_certs: "{{ vault_cert_validate_certs }}"
+  delegate_to: localhost
+  become: false
+  register: _vault_root_ca_response
+
+# ── Build certificate artifacts ──────────────────────────────
+- name: Set certificate facts
+  ansible.builtin.set_fact:
+    _vault_cert_pem: "{{ _vault_issue_response.json.data.certificate }}"
+    _vault_key_pem: "{{ _vault_issue_response.json.data.private_key }}"
+    _vault_ca_chain: "{{ _vault_issue_response.json.data.ca_chain }}"
+    _vault_root_ca_pem: "{{ _vault_root_ca_response.content | trim }}"
+    # Fullchain: server cert + intermediate chain (for TLS serving)
+    _vault_fullchain_pem: |-
+      {{ ([_vault_issue_response.json.data.certificate]
+          + _vault_issue_response.json.data.ca_chain) | join('\n') }}
+    _vault_serial: "{{ _vault_issue_response.json.data.serial_number }}"
+  no_log: true
+
+- name: "Certificate issued: serial={{ _vault_serial }}, CN={{ vault_cert_common_name }}"
+  ansible.builtin.debug:
+    msg: "Certificate serial {{ _vault_serial }} issued for {{ vault_cert_common_name }} (TTL: {{ vault_cert_ttl }})"
+
+# ── Deploy ───────────────────────────────────────────────────
+- name: Deploy as K8s secrets
+  ansible.builtin.include_tasks: deploy-k8s.yml
+  when: vault_cert_deploy == "k8s"
+
+- name: Deploy as certificate files
+  ansible.builtin.include_tasks: deploy-file.yml
+  when: vault_cert_deploy == "file"

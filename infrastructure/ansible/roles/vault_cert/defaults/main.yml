@@ -1,0 +1,46 @@
+---
+# vault_cert role — Issue certificates from Vault PKI and deploy them.
+#
+# Authenticates to Vault's PKI intermediate CA, issues a certificate,
+# and deploys it as either K8s TLS secrets or files on disk.
+#
+# Auth: export VAULT_TOKEN=hvs.xxx  (or pass -e vault_cert_token=hvs.xxx)
+#
+# Required Vault policy (minimum):
+#   path "pki_int/issue/home-arpa-fqdns" { capabilities = ["create","update"] }
+
+# ── Vault connection ─────────────────────────────────────────
+vault_cert_addr: "https://vault.home.arpa"
+vault_cert_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+vault_cert_validate_certs: true
+
+# ── PKI engine ───────────────────────────────────────────────
+vault_cert_pki_mount: "pki_int"
+vault_cert_pki_role: "home-arpa-fqdns"
+vault_cert_root_pki_mount: "pki"          # root CA mount (for cacerts.pem)
+
+# ── Certificate parameters ───────────────────────────────────
+vault_cert_common_name: ""                # REQUIRED — e.g. "rancher.mgmt.home.arpa"
+vault_cert_alt_names: []                  # extra SANs beyond CN
+vault_cert_ttl: "8760h"                   # 1 year
+
+# ── Deploy mode ──────────────────────────────────────────────
+# "k8s"  → K8s TLS secret + optional CA secret (services on K8s)
+# "file" → cert/key/ca files on disk (standalone services)
+vault_cert_deploy: "file"
+
+# ── File deploy ──────────────────────────────────────────────
+vault_cert_file_cert: "/etc/ssl/certs/{{ vault_cert_common_name }}.crt"
+vault_cert_file_key: "/etc/ssl/private/{{ vault_cert_common_name }}.key"
+vault_cert_file_ca: "/etc/ssl/certs/vault-ca-chain.crt"
+vault_cert_file_owner: "root"
+vault_cert_file_group: "root"
+vault_cert_file_mode_cert: "0644"
+vault_cert_file_mode_key: "0600"
+vault_cert_file_notify: []                # handler names to trigger on change
+
+# ── K8s deploy ───────────────────────────────────────────────
+vault_cert_k8s_namespace: ""              # REQUIRED for k8s mode
+vault_cert_k8s_tls_secret: ""            # TLS secret name (tls.crt + tls.key)
+vault_cert_k8s_ca_secret: ""             # CA secret name (cacerts.pem); empty = skip
+vault_cert_k8s_kubeconfig: "/etc/rancher/k3s/k3s.yaml"

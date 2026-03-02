@@ -1,0 +1,55 @@
+---
+# vault_cert — deploy certificate as files on disk
+#
+# Writes:
+#   - Fullchain certificate (server + intermediate CA)
+#   - Private key (restricted permissions)
+#   - Root CA certificate (for client verification)
+#
+# Triggers handlers listed in vault_cert_file_notify on change
+# (e.g. restart nginx, reload haproxy).
+
+- name: Ensure certificate directory exists
+  ansible.builtin.file:
+    path: "{{ vault_cert_file_cert | dirname }}"
+    state: directory
+    owner: "{{ vault_cert_file_owner }}"
+    group: "{{ vault_cert_file_group }}"
+    mode: "0755"
+
+- name: Ensure private key directory exists
+  ansible.builtin.file:
+    path: "{{ vault_cert_file_key | dirname }}"
+    state: directory
+    owner: "{{ vault_cert_file_owner }}"
+    group: "{{ vault_cert_file_group }}"
+    mode: "0750"
+
+- name: "Deploy fullchain certificate: {{ vault_cert_file_cert }}"
+  ansible.builtin.copy:
+    content: "{{ _vault_fullchain_pem }}\n"
+    dest: "{{ vault_cert_file_cert }}"
+    owner: "{{ vault_cert_file_owner }}"
+    group: "{{ vault_cert_file_group }}"
+    mode: "{{ vault_cert_file_mode_cert }}"
+  no_log: true
+  notify: "{{ vault_cert_file_notify }}"
+
+- name: "Deploy private key: {{ vault_cert_file_key }}"
+  ansible.builtin.copy:
+    content: "{{ _vault_key_pem }}\n"
+    dest: "{{ vault_cert_file_key }}"
+    owner: "{{ vault_cert_file_owner }}"
+    group: "{{ vault_cert_file_group }}"
+    mode: "{{ vault_cert_file_mode_key }}"
+  no_log: true
+  notify: "{{ vault_cert_file_notify }}"
+
+- name: "Deploy root CA: {{ vault_cert_file_ca }}"
+  ansible.builtin.copy:
+    content: "{{ _vault_root_ca_pem }}\n"
+    dest: "{{ vault_cert_file_ca }}"
+    owner: "{{ vault_cert_file_owner }}"
+    group: "{{ vault_cert_file_group }}"
+    mode: "{{ vault_cert_file_mode_cert }}"
+  notify: "{{ vault_cert_file_notify }}"

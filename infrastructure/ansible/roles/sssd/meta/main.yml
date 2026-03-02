@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  namespace: homelab
+  role_name: sssd
+  author: necdetsanli
+  description: >-
+    SSSD post-enrollment configuration for FreeIPA-joined hosts. Does not
+    re-template the full sssd.conf (ipa-client-install owns domain-specific
+    settings) — instead ensures critical directives are correct: nss, pam,
+    ssh, and sudo services are active, sudo_provider is set to ipa, and
+    nsswitch.conf includes sss entries. Flushes SSSD cache after changes.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+    - name: Debian
+      versions:
+        - trixie   # 13
+  galaxy_tags:
+    - sssd
+    - freeipa
+    - authentication
+    - identity
+    - sudo
+dependencies: []

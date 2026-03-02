@@ -1,0 +1,3 @@
+---
+# vault_cert — no handlers (secrets are deployed via kubectl / file copy).
+# Consumers define their own handlers via vault_cert_file_notify.

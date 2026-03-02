@@ -1,0 +1,29 @@
+---
+galaxy_info:
+  namespace: homelab
+  role_name: vault_cert
+  author: necdetsanli
+  description: >-
+    Issue TLS certificates from HashiCorp Vault PKI intermediate CA
+    (pki_int/issue) and deploy them to target hosts. Supports two deploy
+    modes: K8s TLS + CA secrets via kubectl (for services on Kubernetes)
+    or cert/key/ca files on disk (for standalone services like Nextcloud,
+    TrueNAS, or OPNsense). Certificate issuance is delegated to the
+    Ansible controller via the Vault HTTP API — no Vault CLI required
+    on target hosts.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+    - name: Debian
+      versions:
+        - trixie   # 13
+  galaxy_tags:
+    - vault
+    - pki
+    - certificate
+    - tls
+    - security
+dependencies: []

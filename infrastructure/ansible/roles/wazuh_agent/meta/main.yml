@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  namespace: homelab
+  role_name: wazuh_agent
+  author: necdetsanli
+  description: >-
+    Install and configure the Wazuh SIEM/XDR agent. Adds the official
+    Wazuh APT repository with GPG verification, installs a pinned agent
+    version (dpkg hold to prevent accidental upgrades), and connects to
+    the Wazuh manager. Separate upgrade playbook available for controlled
+    version bumps with compatibility validation.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+    - name: Debian
+      versions:
+        - trixie   # 13
+  galaxy_tags:
+    - wazuh
+    - siem
+    - security
+    - monitoring
+    - xdr
+dependencies: []

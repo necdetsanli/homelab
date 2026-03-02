@@ -1,5 +1,5 @@
 ---
-# Rancher — firewall rules
+# Rancher — firewall + Vault PKI certificate
 
 # k3s host — Rancher runs on native k3s (not Docker).
 # Forward chain must allow pod traffic via CNI bridge (flannel).
@@ -15,3 +15,12 @@ firewall_allow_rules:
       - "192.168.20.22/32"     # edge VIP (HAProxy)
       - "10.42.0.0/16"         # K8s pods — cattle-cluster-agent (Cilium L2)
     comment: "Rancher HTTPS NodePort (HAProxy + cluster agent)"
+
+# Vault PKI certificate — issued by vault_cert role
+# ansible-playbook playbooks/vault-cert.yml --limit rancher
+vault_cert_common_name: "rancher.mgmt.home.arpa"
+vault_cert_deploy: "k8s"
+vault_cert_k8s_namespace: "cattle-system"
+vault_cert_k8s_tls_secret: "tls-rancher-ingress"
+vault_cert_k8s_ca_secret: "tls-ca"
+vault_cert_k8s_kubeconfig: "/etc/rancher/k3s/k3s.yaml"

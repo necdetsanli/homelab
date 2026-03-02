@@ -1,0 +1,24 @@
+---
+# Issue Vault PKI certificate and deploy to target host.
+#
+# The vault_cert role issues a certificate from Vault's intermediate CA
+# (pki_int/issue/home-arpa-fqdns) and deploys it to the target host as
+# either K8s TLS secrets (k8s mode) or cert/key files on disk (file mode).
+#
+# Prerequisites:
+#   - Vault token with pki_int/issue/home-arpa-fqdns capability
+#   - Root CA must be in the Ansible controller's system trust store
+#     (or set vault_cert_validate_certs: false in group_vars)
+#
+# Usage:
+#   export VAULT_TOKEN=hvs.xxx
+#   ansible-playbook playbooks/vault-cert.yml --limit rancher
+#   ansible-playbook playbooks/vault-cert.yml --limit nextcloud
+#   ansible-playbook playbooks/vault-cert.yml --limit rancher --check  # dry-run
+#
+# Required Vault policy (create ad-hoc with vault token create -policy):
+#   path "pki_int/issue/home-arpa-fqdns" { capabilities = ["create","update"] }
+- name: Issue Vault PKI certificate
+  hosts: all
+  roles:
+    - vault_cert

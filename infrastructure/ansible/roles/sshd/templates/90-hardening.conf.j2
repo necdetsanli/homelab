@@ -1,6 +1,5 @@
-# SSH hardening — managed by Ansible
-# Access control: FreeIPA HBAC (not local AllowGroups/AllowUsers)
-# Do NOT edit manually — changes will be overwritten.
+# {{ ansible_managed }}
+# SSH hardening — access control via FreeIPA HBAC (not local AllowGroups/AllowUsers).
 
 # ── Authentication ───────────────────────────────────────────
 PermitRootLogin {{ sshd_permit_root_login }}

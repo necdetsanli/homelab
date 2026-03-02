@@ -1,0 +1,120 @@
+---
+# vault_cert — deploy certificate as K8s TLS + CA secrets
+#
+# Creates:
+#   - TLS secret (tls.crt = fullchain, tls.key = private key)
+#   - CA secret  (cacerts.pem = root CA, optional — for privateCA)
+#
+# Uses kubectl on the target host (k3s ships its own kubectl).
+# Secrets are applied idempotently (--dry-run=client | kubectl apply).
+
+- name: Validate K8s deploy variables
+  ansible.builtin.assert:
+    that:
+      - vault_cert_k8s_namespace | length > 0
+      - vault_cert_k8s_tls_secret | length > 0
+      - vault_cert_k8s_kubeconfig | length > 0
+    fail_msg: "vault_cert_k8s_namespace, vault_cert_k8s_tls_secret, and vault_cert_k8s_kubeconfig are required"
+
+- name: Create temp directory for certificate files
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: .vault-cert
+  register: _cert_tmpdir
+
+- name: Deploy K8s secrets
+  block:
+    # ── Write cert artifacts to temp ─────────────────────────
+    - name: Write fullchain certificate
+      ansible.builtin.copy:
+        content: "{{ _vault_fullchain_pem }}\n"
+        dest: "{{ _cert_tmpdir.path }}/tls.crt"
+        mode: "0600"
+      no_log: true
+
+    - name: Write private key
+      ansible.builtin.copy:
+        content: "{{ _vault_key_pem }}\n"
+        dest: "{{ _cert_tmpdir.path }}/tls.key"
+        mode: "0600"
+      no_log: true
+
+    # ── TLS secret ───────────────────────────────────────────
+    - name: "Generate TLS secret manifest: {{ vault_cert_k8s_tls_secret }}"
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig={{ vault_cert_k8s_kubeconfig }}
+          - -n
+          - "{{ vault_cert_k8s_namespace }}"
+          - create
+          - secret
+          - tls
+          - "{{ vault_cert_k8s_tls_secret }}"
+          - "--cert={{ _cert_tmpdir.path }}/tls.crt"
+          - "--key={{ _cert_tmpdir.path }}/tls.key"
+          - --dry-run=client
+          - -o
+          - yaml
+      register: _tls_secret_manifest
+      changed_when: false
+      no_log: true
+
+    - name: "Apply TLS secret: {{ vault_cert_k8s_namespace }}/{{ vault_cert_k8s_tls_secret }}"
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig={{ vault_cert_k8s_kubeconfig }}
+          - apply
+          - -f
+          - "-"
+        stdin: "{{ _tls_secret_manifest.stdout }}"
+      register: _tls_apply
+      changed_when: "'configured' in _tls_apply.stdout"
+
+    # ── CA secret (optional) ─────────────────────────────────
+    - name: Write root CA certificate
+      ansible.builtin.copy:
+        content: "{{ _vault_root_ca_pem }}\n"
+        dest: "{{ _cert_tmpdir.path }}/cacerts.pem"
+        mode: "0600"
+      when: vault_cert_k8s_ca_secret | length > 0
+
+    - name: "Generate CA secret manifest: {{ vault_cert_k8s_ca_secret }}"
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig={{ vault_cert_k8s_kubeconfig }}
+          - -n
+          - "{{ vault_cert_k8s_namespace }}"
+          - create
+          - secret
+          - generic
+          - "{{ vault_cert_k8s_ca_secret }}"
+          - "--from-file=cacerts.pem={{ _cert_tmpdir.path }}/cacerts.pem"
+          - --dry-run=client
+          - -o
+          - yaml
+      register: _ca_secret_manifest
+      changed_when: false
+      when: vault_cert_k8s_ca_secret | length > 0
+      no_log: true
+
+    - name: "Apply CA secret: {{ vault_cert_k8s_namespace }}/{{ vault_cert_k8s_ca_secret }}"
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig={{ vault_cert_k8s_kubeconfig }}
+          - apply
+          - -f
+          - "-"
+        stdin: "{{ _ca_secret_manifest.stdout }}"
+      register: _ca_apply
+      changed_when: "'configured' in _ca_apply.stdout"
+      when: vault_cert_k8s_ca_secret | length > 0
+
+  always:
+    - name: Clean up temp directory
+      ansible.builtin.file:
+        path: "{{ _cert_tmpdir.path }}"
+        state: absent

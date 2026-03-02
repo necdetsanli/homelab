@@ -1,5 +1,5 @@
-# FreeIPA SSH integration — managed by Ansible
-# Do NOT edit manually — changes will be overwritten.
+# {{ ansible_managed }}
+# FreeIPA SSH integration — do NOT edit manually.
 
 PubkeyAuthentication {{ 'yes' if sshd_pubkey_auth else 'no' }}
 GSSAPIAuthentication {{ 'yes' if sshd_gssapi_auth else 'no' }}

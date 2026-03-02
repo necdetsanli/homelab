@@ -1,20 +1,24 @@
 ---
 galaxy_info:
+  namespace: homelab
   role_name: node_exporter
-  author: homelab
+  author: necdetsanli
   description: >-
-    Install and configure Prometheus node_exporter from GitHub releases.
-    Static binary, dedicated system user, hardened systemd unit.
+    Install Prometheus node_exporter from GitHub releases as a static
+    binary with a dedicated system user and hardened systemd unit
+    (NoNewPrivileges, ProtectSystem=strict, MemoryDenyWriteExecute).
+    Supports version pinning with SHA256 checksum verification,
+    configurable listen address, textfile collector, and per-host
+    collector enable/disable. Skipped on K8s nodes (DaemonSet-managed).
   license: MIT
   min_ansible_version: "2.15"
   platforms:
     - name: Ubuntu
       versions:
         - noble    # 24.04
-        - jammy    # 22.04
     - name: Debian
       versions:
-        - bookworm # 12
+        - trixie   # 13
   galaxy_tags:
     - monitoring
     - prometheus

@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  namespace: homelab
+  role_name: sshd
+  author: necdetsanli
+  description: >-
+    SSH server hardening with FreeIPA integration. Deploys sshd_config.d
+    drop-in files for FreeIPA AuthorizedKeysCommand (sss_ssh_authorizedkeys),
+    GSSAPI authentication, and security hardening (no passwords, no root
+    login, no forwarding). Removes conflicting cloud-init drop-ins.
+    FreeIPA HBAC is the single source of truth for access control.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble    # 24.04
+    - name: Debian
+      versions:
+        - trixie   # 13
+  galaxy_tags:
+    - sshd
+    - ssh
+    - security
+    - hardening
+    - freeipa
+dependencies: []

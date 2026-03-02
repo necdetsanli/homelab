@@ -1,10 +1,15 @@
 ---
 galaxy_info:
+  namespace: homelab
   role_name: firewall
-  author: homelab
+  author: necdetsanli
   description: >-
     nftables-based host firewall for intra-VLAN east-west traffic control.
     OPNsense cannot filter same-VLAN L2 traffic — this role closes that gap.
+    Features: stateful connection tracking, anti-spoofing, rate-limited SSH,
+    ICMP/VRRP support, per-host allow rules via group_vars, Docker and k3s
+    CNI forwarding, and a dead man's switch for safe first-run deployment.
+    Validates rules with nft -c before applying.
   license: MIT
   min_ansible_version: "2.15"
   platforms:
@@ -19,4 +24,5 @@ galaxy_info:
     - nftables
     - security
     - hardening
+    - networking
 dependencies: []
