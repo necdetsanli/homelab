@@ -13,17 +13,11 @@ openscap_packages: >-
 
 # ── SCAP content ─────────────────────────────────────────────
 # Path to the SCAP data-stream XML on the target host.
-# Auto-detected per distribution. Override in group_vars/host_vars if needed.
-#   Ubuntu 24.04 → ssg-ubuntu2404-ds.xml  (from ssg-debderived)
-#   Debian 13    → ssg-debian13-ds.xml    (from ssg-debian)
-#   Debian 12    → ssg-debian12-ds.xml    (from ssg-debian)
-openscap_content: >-
-  {{
-    '/usr/share/xml/scap/ssg/content/ssg-ubuntu' ~ ansible_distribution_version | replace('.', '') ~ '-ds.xml'
-    if ansible_distribution == 'Ubuntu'
-    else
-    '/usr/share/xml/scap/ssg/content/ssg-debian' ~ ansible_distribution_major_version ~ '-ds.xml'
-  }}
+# If left empty, the role auto-discovers the newest matching content
+# for the host's distribution (e.g. ssg-ubuntu2204-ds.xml on Ubuntu,
+# ssg-debian12-ds.xml on Debian). Override in group_vars/host_vars
+# to pin a specific content file.
+openscap_content: ""
 
 # XCCDF profile to evaluate.
 # Common choices:
