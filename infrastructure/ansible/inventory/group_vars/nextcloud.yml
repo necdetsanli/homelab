@@ -1,9 +1,6 @@
 ---
 # Nextcloud — firewall rules
 # Port: 11000 (Nextcloud container reverse proxy port)
-
-# Wazuh OpenSCAP continuous compliance scanning
-wazuh_openscap_enabled: true
 firewall_allow_rules:
   - port: 11000
     proto: tcp

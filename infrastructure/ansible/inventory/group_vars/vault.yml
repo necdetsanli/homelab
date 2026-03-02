@@ -1,9 +1,6 @@
 ---
 # Vault cluster — firewall rules
 # Ports: 8200 (API), 8201 (cluster peering)
-
-# Wazuh OpenSCAP continuous compliance scanning
-wazuh_openscap_enabled: true
 firewall_allow_rules:
   - port: 8200
     proto: tcp

@@ -1,8 +1,5 @@
 ---
 # Ansible controller — firewall rules
 # No extra inbound ports needed — Ansible initiates outbound connections.
-
-# Wazuh OpenSCAP continuous compliance scanning
-wazuh_openscap_enabled: true
 # SSH access is already covered by the base rules (trusted_ssh_sources).
 firewall_allow_rules: []
