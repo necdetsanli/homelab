@@ -4,15 +4,31 @@
 # Authenticates to Vault's PKI intermediate CA, issues a certificate,
 # and deploys it as either K8s TLS secrets or files on disk.
 #
-# Auth: export VAULT_TOKEN=hvs.xxx  (or pass -e vault_cert_token=hvs.xxx)
+# Auth methods (in priority order):
+#   1. AppRole (recommended) — set vault_cert_approle_role_id + secret_id
+#   2. Token   (fallback)    — export VAULT_TOKEN or pass -e vault_cert_token=hvs.xxx
 #
 # Required Vault policy (minimum):
 #   path "pki_int/issue/home-arpa-fqdns" { capabilities = ["create","update"] }
+#   path "pki/ca/pem"                    { capabilities = ["read"] }
 
 # ── Vault connection ─────────────────────────────────────────
 vault_cert_addr: "https://vault.home.arpa"
-vault_cert_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
 vault_cert_validate_certs: true
+
+# ── Auth: AppRole (recommended) ──────────────────────────────
+# Uses AppRole to obtain a short-lived token scoped to PKI-only policy.
+# role_id is not sensitive — store in group_vars.
+# secret_id IS sensitive — pass via -e, env var, or Ansible Vault.
+vault_cert_auth_method: "approle"         # "approle" or "token"
+vault_cert_approle_mount: "approle"       # auth method mount path
+vault_cert_approle_role_id: ""            # AppRole role_id (from Vault)
+vault_cert_approle_secret_id: "{{ lookup('env', 'VAULT_SECRET_ID') }}"
+
+# ── Auth: Token (fallback) ───────────────────────────────────
+# Only used when vault_cert_auth_method == "token".
+# Avoid root tokens — create a scoped token with the policy above.
+vault_cert_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
 
 # ── PKI engine ───────────────────────────────────────────────
 vault_cert_pki_mount: "pki_int"

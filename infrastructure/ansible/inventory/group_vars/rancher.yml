@@ -17,7 +17,8 @@ firewall_allow_rules:
     comment: "Rancher HTTPS NodePort (HAProxy + cluster agent)"
 
 # Vault PKI certificate — issued by vault_cert role
-# ansible-playbook playbooks/vault-cert.yml --limit rancher
+# export VAULT_SECRET_ID=xxx && ansible-playbook playbooks/vault-cert.yml --limit rancher
+vault_cert_approle_role_id: "992c55e7-cb37-bac6-fe5c-1d9152aa8a0d"
 vault_cert_common_name: "rancher.mgmt.home.arpa"
 vault_cert_deploy: "k8s"
 vault_cert_k8s_namespace: "cattle-system"

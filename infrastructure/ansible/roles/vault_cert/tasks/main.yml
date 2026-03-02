@@ -1,20 +1,68 @@
 ---
 # vault_cert role — main task file
 #
-# 1. Validate inputs
-# 2. Issue certificate from Vault PKI (delegated to Ansible controller)
-# 3. Fetch root CA from Vault (public endpoint, no auth needed)
-# 4. Deploy to target host (K8s secrets or files)
+# 1. Authenticate to Vault (AppRole or token)
+# 2. Validate inputs
+# 3. Issue certificate from Vault PKI (delegated to Ansible controller)
+# 4. Fetch root CA from Vault (public endpoint, no auth needed)
+# 5. Deploy to target host (K8s secrets or files)
+
+# ── Authentication ───────────────────────────────────────────
+- name: Authenticate to Vault via AppRole
+  when: vault_cert_auth_method == "approle"
+  block:
+    - name: Validate AppRole credentials
+      ansible.builtin.assert:
+        that:
+          - vault_cert_approle_role_id | length > 0
+          - vault_cert_approle_secret_id | length > 0
+        fail_msg: >-
+          vault_cert_approle_role_id must be set in group_vars and
+          VAULT_SECRET_ID must be exported (or pass -e vault_cert_approle_secret_id=...)
+
+    - name: Login to Vault via AppRole
+      ansible.builtin.uri:
+        url: "{{ vault_cert_addr }}/v1/auth/{{ vault_cert_approle_mount }}/login"
+        method: POST
+        body_format: json
+        body:
+          role_id: "{{ vault_cert_approle_role_id }}"
+          secret_id: "{{ vault_cert_approle_secret_id }}"
+        status_code: 200
+        validate_certs: "{{ vault_cert_validate_certs }}"
+      delegate_to: localhost
+      become: false
+      register: _vault_approle_login
+      no_log: true
+
+    - name: Set Vault token from AppRole login
+      ansible.builtin.set_fact:
+        _vault_auth_token: "{{ _vault_approle_login.json.auth.client_token }}"
+      no_log: true
+
+- name: Use provided Vault token
+  when: vault_cert_auth_method == "token"
+  block:
+    - name: Validate Vault token
+      ansible.builtin.assert:
+        that:
+          - vault_cert_token | length > 0
+        fail_msg: >-
+          vault_cert_token must be set — export VAULT_TOKEN or pass
+          -e vault_cert_token=hvs.xxx
+
+    - name: Set Vault token from variable
+      ansible.builtin.set_fact:
+        _vault_auth_token: "{{ vault_cert_token }}"
+      no_log: true
 
 # ── Validation ───────────────────────────────────────────────
 - name: Validate required variables
   ansible.builtin.assert:
     that:
       - vault_cert_common_name | length > 0
-      - vault_cert_token | length > 0
     fail_msg: >-
-      vault_cert_common_name must be set and VAULT_TOKEN must be exported
-      (or pass -e vault_cert_token=hvs.xxx)
+      vault_cert_common_name must be set (e.g. "rancher.mgmt.home.arpa")
     success_msg: "Issuing certificate for {{ vault_cert_common_name }}"
 
 # ── Issue certificate from Vault PKI ────────────────────────
@@ -23,7 +71,7 @@
     url: "{{ vault_cert_addr }}/v1/{{ vault_cert_pki_mount }}/issue/{{ vault_cert_pki_role }}"
     method: POST
     headers:
-      X-Vault-Token: "{{ vault_cert_token }}"
+      X-Vault-Token: "{{ _vault_auth_token }}"
     body_format: json
     body:
       common_name: "{{ vault_cert_common_name }}"
