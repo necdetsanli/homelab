@@ -103,9 +103,7 @@
     _vault_ca_chain: "{{ _vault_issue_response.json.data.ca_chain }}"
     _vault_root_ca_pem: "{{ _vault_root_ca_response.content | trim }}"
     # Fullchain: server cert + intermediate chain (for TLS serving)
-    _vault_fullchain_pem: |-
-      {{ ([_vault_issue_response.json.data.certificate]
-          + _vault_issue_response.json.data.ca_chain) | join('\n') }}
+    _vault_fullchain_pem: "{{ ([_vault_issue_response.json.data.certificate] + _vault_issue_response.json.data.ca_chain) | join('\n') }}"
     _vault_serial: "{{ _vault_issue_response.json.data.serial_number }}"
   no_log: true
 
