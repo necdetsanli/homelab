@@ -1,6 +1,9 @@
 ---
 # Edge nodes (HAProxy + keepalived) — firewall rules
 # Ports: 80 (HTTP redirect), 443 (HTTPS)
+
+# Wazuh OpenSCAP continuous compliance scanning
+wazuh_openscap_enabled: true
 # Protocol: VRRP (IP protocol 112) between peers
 # SSH: peers need mutual SSH for certsync (rsync over SSH)
 

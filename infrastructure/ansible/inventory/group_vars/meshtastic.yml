@@ -1,6 +1,9 @@
 ---
 # Meshtastic LXC — firewall rules
 # Port: 8080 (web UI via HAProxy)
+
+# Wazuh OpenSCAP continuous compliance scanning
+wazuh_openscap_enabled: true
 firewall_allow_rules:
   - port: 8080
     proto: tcp
