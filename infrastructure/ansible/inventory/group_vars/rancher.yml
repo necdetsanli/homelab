@@ -5,16 +5,21 @@
 # Forward chain must allow pod traffic via CNI bridge (flannel).
 firewall_k3s_host: true
 
-# Port: 30443 (HTTPS NodePort — Rancher on k3s via HAProxy + K8s cluster agent)
+# Port: 30080 (HTTP NodePort — Rancher on k3s, TLS terminated at HAProxy)
+# Port: 30443 (HTTPS NodePort — Rancher direct access + cattle-cluster-agent)
 firewall_allow_rules:
-  - port: 30443
+  - port: 30080
     proto: tcp
     sources:
       - "192.168.20.20/32"     # edge-1 (HAProxy)
       - "192.168.20.21/32"     # edge-2 (HAProxy)
-      - "192.168.20.22/32"     # edge VIP (HAProxy)
-      - "10.42.0.0/16"         # K8s pods — cattle-cluster-agent (Cilium L2)
-    comment: "Rancher HTTPS NodePort (HAProxy + cluster agent)"
+      - "192.168.20.22/32"     # edge VIP (keepalived)
+    comment: "Rancher HTTP NodePort (HAProxy → plain HTTP)"
+  - port: 30443
+    proto: tcp
+    sources:
+      - "10.42.0.0/16"         # K8s pods — cattle-cluster-agent
+    comment: "Rancher HTTPS NodePort (cluster agent internal)"
 
 # Vault PKI certificate — issued by vault_cert role
 # export VAULT_SECRET_ID=xxx && ansible-playbook playbooks/vault-cert.yml --limit rancher

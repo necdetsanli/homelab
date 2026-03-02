@@ -1,0 +1,18 @@
+# ──────────────────────────────────────────────────────────────
+# Example variable values — copy to terraform.tfvars
+# ──────────────────────────────────────────────────────────────
+# cp terraform.tfvars.example terraform.tfvars
+# Then fill in sensitive values. terraform.tfvars is gitignored.
+# ──────────────────────────────────────────────────────────────
+
+proxmox_endpoint  = "https://192.168.50.2:8006"
+proxmox_api_token = "terraform@pam!homelab=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+proxmox_insecure  = true
+proxmox_ssh_user  = "root"
+proxmox_node      = "proxmox"
+
+ssh_public_keys = [
+  "ssh-ed25519 AAAA... necdetsanli@workstation",
+]
+
+default_user = "necdetsanli"
