@@ -79,6 +79,14 @@ table inet filter {
     # --- node_exporter metrics ---
     tcp dport {{ firewall_node_exporter_port }} ip saddr @node_exporter_scrapers counter accept comment "Prometheus node_exporter scrape"
 
+{% if firewall_k3s_host | default(false) %}
+    # --- k3s internal (pod → API server + kubelet after kube-proxy DNAT) ---
+    tcp dport 6443 ip saddr {{ firewall_k3s_pod_cidr }} counter accept comment "k3s: pod to API server (post-DNAT)"
+    tcp dport 6443 ip saddr {{ firewall_k3s_service_cidr }} counter accept comment "k3s: service CIDR to API server"
+    tcp dport 10250 ip saddr {{ firewall_k3s_pod_cidr }} counter accept comment "k3s: pod to kubelet (exec/logs)"
+    tcp dport 10250 ip saddr {{ firewall_k3s_service_cidr }} counter accept comment "k3s: service CIDR to kubelet"
+{% endif %}
+
 {% if firewall_allow_rules | length > 0 %}
     # --- Host/group-specific rules ---
 {% for rule in firewall_allow_rules %}
