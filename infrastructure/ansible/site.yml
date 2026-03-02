@@ -36,3 +36,11 @@
   tags: [openscap]
   roles:
     - openscap
+
+# grafana_alloy — bare-metal telemetry agent (logs → Loki, metrics → Mimir)
+# K8s nodes use the in-cluster OTel Collector DaemonSet instead.
+- name: Deploy Grafana Alloy telemetry agent
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  tags: [grafana_alloy]
+  roles:
+    - grafana_alloy

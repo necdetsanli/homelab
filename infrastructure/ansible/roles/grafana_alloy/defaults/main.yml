@@ -1,0 +1,16 @@
+---
+# Grafana Alloy — bare-metal telemetry agent
+# Ships journald logs → Loki, node_exporter metrics → Mimir
+
+# APT repository
+alloy_gpg_key_url: "https://apt.grafana.com/gpg.key"
+alloy_gpg_keyring: "/usr/share/keyrings/grafana.gpg"
+alloy_repo_url: "https://apt.grafana.com"
+
+# Push endpoints (Cilium LB-IPAM VIPs inside K8s)
+alloy_loki_push_url: "http://192.168.20.202/loki/api/v1/push"
+alloy_mimir_push_url: "http://192.168.20.203/api/v1/push"
+
+# Scrape settings
+alloy_scrape_interval: "30s"
+alloy_node_exporter_port: 9100

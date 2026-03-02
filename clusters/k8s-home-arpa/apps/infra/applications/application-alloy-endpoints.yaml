@@ -1,0 +1,38 @@
+# Alloy Endpoints — Cilium LB-IPAM backed push endpoints for
+# bare-metal Grafana Alloy agents to send logs and metrics into
+# the existing Loki + Mimir stack.
+#
+# Resources:
+#   - loki-push-lb  (Service LB → 192.168.20.202)
+#   - mimir-push-lb (Service LB → 192.168.20.203)
+#   - CiliumNetworkPolicies allowing 192.168.20.0/24 ingress
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy-endpoints
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://github.com/necdetsanli/homelab.git"
+    targetRevision: "main"
+    path: clusters/k8s-home-arpa/apps/infra/alloy-endpoints
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: "argocd"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

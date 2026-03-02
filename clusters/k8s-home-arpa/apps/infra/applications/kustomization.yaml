@@ -30,4 +30,6 @@ resources:
   - application-otel-collector.yaml
   # Observability: Jaeger
   - application-jaeger.yaml
+  # Observability: bare-metal Alloy push endpoints (Loki + Mimir LB VIPs)
+  - application-alloy-endpoints.yaml
 

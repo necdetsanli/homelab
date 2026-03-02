@@ -1,0 +1,49 @@
+# Allow bare-metal Grafana Alloy agents (192.168.20.0/24) to push
+# telemetry data into the cluster via Cilium LB-IPAM VIPs.
+#
+# Loki gateway (.202)  — log ingestion on port 80
+# Mimir nginx  (.203)  — metric ingestion on port 80
+#
+# These policies complement the existing allow-otel-to-logging and
+# allow-otel-to-monitoring policies which allow in-cluster OTel
+# Collector traffic from the opentelemetry namespace.
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-alloy-to-loki
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/component: gateway
+  ingress:
+    - fromCIDR:
+        - 192.168.20.0/24
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-alloy-to-mimir
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: mimir
+      app.kubernetes.io/component: nginx
+  ingress:
+    - fromCIDR:
+        - 192.168.20.0/24
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

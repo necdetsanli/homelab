@@ -1,0 +1,52 @@
+---
+# ── GPG key ──────────────────────────────────────────────────
+- name: Download Grafana GPG key
+  ansible.builtin.get_url:
+    url: "{{ alloy_gpg_key_url }}"
+    dest: /tmp/grafana-gpg.key
+    mode: "0644"
+  changed_when: false
+
+- name: De-armor GPG key to keyring
+  ansible.builtin.shell: |
+    gpg --dearmor < /tmp/grafana-gpg.key > {{ alloy_gpg_keyring }}
+  args:
+    creates: "{{ alloy_gpg_keyring }}"
+
+- name: Set keyring permissions
+  ansible.builtin.file:
+    path: "{{ alloy_gpg_keyring }}"
+    mode: "0644"
+
+# ── APT repository ───────────────────────────────────────────
+- name: Add Grafana APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ alloy_gpg_keyring }}] {{ alloy_repo_url }} stable main"
+    filename: grafana
+    state: present
+    update_cache: true
+
+# ── Install Alloy ────────────────────────────────────────────
+- name: Install grafana-alloy
+  ansible.builtin.apt:
+    name: alloy
+    state: present
+    update_cache: true
+
+# ── Configuration ────────────────────────────────────────────
+- name: Deploy Alloy configuration
+  ansible.builtin.template:
+    src: config.alloy.j2
+    dest: /etc/alloy/config.alloy
+    owner: root
+    group: alloy
+    mode: "0640"
+  notify: Restart alloy
+
+# ── Enable and start service ─────────────────────────────────
+- name: Enable and start alloy
+  ansible.builtin.systemd:
+    name: alloy
+    state: started
+    enabled: true
+    daemon_reload: true

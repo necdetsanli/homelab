@@ -1,0 +1,55 @@
+// {{ ansible_managed }}
+//
+// Grafana Alloy — bare-metal telemetry agent
+// Ships journald logs → Loki, node_exporter metrics → Mimir
+
+// ─── Journal → Loki ────────────────────────────────────────
+
+loki.source.journal "system" {
+  forward_to = [loki.relabel.journal.receiver]
+  labels     = {
+    job  = "journal",
+    host = "{{ inventory_hostname_short }}",
+  }
+}
+
+loki.relabel "journal" {
+  forward_to = [loki.write.default.receiver]
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "{{ alloy_loki_push_url }}"
+  }
+  external_labels = {
+    host    = "{{ inventory_hostname_short }}",
+    cluster = "bare-metal",
+  }
+}
+
+// ─── node_exporter → Mimir ─────────────────────────────────
+
+prometheus.scrape "node_exporter" {
+  targets = [{
+    __address__ = "{{ ansible_host }}:{{ alloy_node_exporter_port }}",
+    host        = "{{ inventory_hostname_short }}",
+  }]
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+  scrape_interval = "{{ alloy_scrape_interval }}"
+  job_name        = "node_exporter"
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "{{ alloy_mimir_push_url }}"
+  }
+}

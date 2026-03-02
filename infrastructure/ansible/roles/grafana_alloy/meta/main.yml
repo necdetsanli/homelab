@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  author: necdetsanli
+  description: Install and configure Grafana Alloy telemetry agent
+  namespace: homelab
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - monitoring
+    - observability
+    - loki
+    - mimir
+    - grafana
+    - alloy
+    - telemetry
+
+dependencies: []
