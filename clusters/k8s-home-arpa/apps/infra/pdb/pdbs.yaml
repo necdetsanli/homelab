@@ -50,7 +50,10 @@ spec:
       app.kubernetes.io/instance: cert-manager
       app.kubernetes.io/component: cainjector
 ---
-# ── monitoring (HA: 2 replicas each) ───────────────────────────────────────
+# ── monitoring (non-Helm managed) ──────────────────────────────────────
+# NOTE: Mimir PDBs removed — the mimir-distributed Helm chart manages
+# its own PDBs. Keeping them here causes SharedResourceWarning conflicts
+# with the mimir ArgoCD app.
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -77,105 +80,10 @@ spec:
     matchLabels:
       app.kubernetes.io/name: zabbix-server
 ---
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: mimir-ingester
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: mimir
-      app.kubernetes.io/component: ingester
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: mimir-distributor
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: mimir
-      app.kubernetes.io/component: distributor
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: mimir-querier
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: mimir
-      app.kubernetes.io/component: querier
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: mimir-query-frontend
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: mimir
-      app.kubernetes.io/component: query-frontend
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: mimir-nginx
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: mimir
-      app.kubernetes.io/component: nginx
----
-# ── logging (HA: 2 replicas each) ──────────────────────────────────────────
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: loki
-  namespace: logging
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: loki
-      app.kubernetes.io/component: single-binary
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: loki-gateway
-  namespace: logging
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: loki
-      app.kubernetes.io/component: gateway
----
+# ── logging (non-Helm managed) ──────────────────────────────────────────
+# NOTE: Loki PDBs removed — the Loki Helm chart manages its own PDBs
+# for single-binary and gateway pods. Keeping them here causes a
+# SharedResourceWarning conflict with the loki ArgoCD app.
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
