@@ -134,7 +134,7 @@ module "k8s_worker1" {
   cores  = 8
   memory = 24576
 
-  disk_size = 80
+  disk_size = 120
 
   network_bridge   = var.default_bridge
   network_vlan     = var.server_vlan_id
@@ -155,7 +155,7 @@ module "k8s_worker2" {
   cores  = 8
   memory = 24576
 
-  disk_size = 80
+  disk_size = 120
 
   network_bridge = var.default_bridge
   network_vlan   = var.server_vlan_id

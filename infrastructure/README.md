@@ -82,8 +82,8 @@ terraform import 'module.meshtastic.proxmox_virtual_environment_container.this' 
 | 104 | Wazuh          | VM   | 2     | 8 GB  | 64G  | 50   | SIEM                        |
 | 106 | ipa            | VM   | 2     | 4 GB  | 32G  | 50   | FreeIPA (DNS/Kerberos/LDAP) |
 | 200 | k8s-master1    | VM   | 4     | 8 GB  | 60G  | 20   | RKE2 control-plane          |
-| 201 | k8s-worker-1   | VM   | 8     | 24 GB | 80G  | 20   | RKE2 worker                 |
-| 202 | k8s-worker-2   | VM   | 8     | 24 GB | 80G  | 20   | RKE2 worker                 |
+| 201 | k8s-worker-1   | VM   | 8     | 24 GB | 120G | 20   | RKE2 worker                 |
+| 202 | k8s-worker-2   | VM   | 8     | 24 GB | 120G | 20   | RKE2 worker                 |
 | 203 | rancher        | VM   | 2     | 8 GB  | 32G  | 20   | Rancher management          |
 | 204 | edge-1         | LXC  | 1     | 1 GB  | 8G   | 20   | HAProxy ingress             |
 | 205 | edge-2         | LXC  | 1     | 1 GB  | 8G   | 20   | HAProxy ingress             |
