@@ -161,3 +161,12 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=false
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: mimir-alertmanager
+      namespace: monitoring
+      jqPathExpressions:
+        - .spec.persistentVolumeClaimRetentionPolicy
+        - .spec.volumeClaimTemplates
