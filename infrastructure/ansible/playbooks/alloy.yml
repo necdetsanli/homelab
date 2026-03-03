@@ -6,6 +6,6 @@
 #   ansible-playbook playbooks/alloy.yml
 #   ansible-playbook playbooks/alloy.yml --limit vault
 - name: Deploy Grafana Alloy telemetry agent
-  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers:!rancher
   roles:
     - grafana_alloy
