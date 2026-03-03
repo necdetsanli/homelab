@@ -75,14 +75,15 @@ spec:
     server: "https://kubernetes.default.svc"
     namespace: longhorn-system
   ignoreDifferences:
-    # Longhorn manager injects conversion webhook config and the API
-    # server normalises CRD schemas post-apply.  Narrowed to specific
-    # sub-fields so structural CRD changes (new versions, served/storage
-    # flags) remain visible in ArgoCD diff.
+    # Longhorn manager injects the full conversion webhook config
+    # (strategy + clientConfig + caBundle) into CRDs at runtime.
+    # The chart ships CRDs without spec.conversion.strategy, which
+    # K8s ≥1.34 rejects on apply.  Ignore the entire conversion block
+    # so ArgoCD relinquishes SSA ownership of it (RespectIgnoreDifferences).
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
       jqPathExpressions:
-        - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.conversion
         - .spec.versions[].schema
         - .spec.versions[].additionalPrinterColumns
         - .status
