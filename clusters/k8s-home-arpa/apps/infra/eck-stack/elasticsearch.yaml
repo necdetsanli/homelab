@@ -32,11 +32,15 @@ spec:
         spec:
           affinity:
             podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      elasticsearch.k8s.elastic.co/cluster-name: homelab
-                  topologyKey: kubernetes.io/hostname
+              # Prefer 1 ES pod per worker but allow co-location during
+              # scaling or node maintenance (only 2 schedulable workers).
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        elasticsearch.k8s.elastic.co/cluster-name: homelab
+                    topologyKey: kubernetes.io/hostname
           containers:
             - name: elasticsearch
               resources:
