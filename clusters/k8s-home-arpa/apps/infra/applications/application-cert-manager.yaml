@@ -22,17 +22,20 @@ spec:
         # Helm hooks are incompatible with ArgoCD sync
         startupapicheck:
           enabled: false
-        # HA: 2 replicas with hard anti-affinity (1 per worker node).
+        # HA: 2 replicas with soft anti-affinity (1 per worker preferred).
         # Controller uses leader election — only one active; second is standby.
+        # Using preferred (not required) to allow rolling updates with 2 workers.
         replicaCount: 2
         affinity:
           podAntiAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              - labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/instance: cert-manager
-                    app.kubernetes.io/component: controller
-                topologyKey: kubernetes.io/hostname
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: cert-manager
+                      app.kubernetes.io/component: controller
+                  topologyKey: kubernetes.io/hostname
         # Resource limits -- right-sized for homelab (3-node cluster)
         resources:
           requests:
@@ -46,12 +49,14 @@ spec:
           replicaCount: 2
           affinity:
             podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/instance: cert-manager
-                      app.kubernetes.io/component: webhook
-                  topologyKey: kubernetes.io/hostname
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/instance: cert-manager
+                        app.kubernetes.io/component: webhook
+                    topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m
@@ -64,12 +69,14 @@ spec:
           replicaCount: 2
           affinity:
             podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/instance: cert-manager
-                      app.kubernetes.io/component: cainjector
-                  topologyKey: kubernetes.io/hostname
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/instance: cert-manager
+                        app.kubernetes.io/component: cainjector
+                    topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m
