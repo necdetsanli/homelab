@@ -1,5 +1,5 @@
 # Loki — log aggregation backend for the LGTM stack.
-# Deployed in SingleBinary mode with 2-replica HA.
+# Deployed in SingleBinary mode with 2-replica HA backed by MinIO.
 # Receives logs from OpenTelemetry Collector via OTLP.
 # Grafana queries Loki via the gateway service.
 apiVersion: argoproj.io/v1alpha1
@@ -21,19 +21,31 @@ spec:
       releaseName: loki
       valuesObject:
         # SingleBinary: all Loki components in one process.
-        # Perfect for homelab with moderate log volume.
+        # 2-replica HA requires object storage (chart validation blocks
+        # >1 replica with filesystem). Using embedded MinIO for S3.
         deploymentMode: SingleBinary
         loki:
           auth_enabled: false
           commonConfig:
             replication_factor: 1
           storage:
-            type: filesystem
+            type: s3
+            s3:
+              endpoint: minio.logging.svc:9000
+              bucketnames: loki-chunks
+              access_key_id: loki
+              secret_access_key: supersecretloki
+              insecure: true
+              s3ForcePathStyle: true
+            bucketNames:
+              chunks: loki-chunks
+              ruler: loki-ruler
+              admin: loki-admin
           schemaConfig:
             configs:
               - from: "2024-01-01"
                 store: tsdb
-                object_store: filesystem
+                object_store: s3
                 schema: v13
                 index:
                   prefix: loki_index_
@@ -43,17 +55,18 @@ spec:
             retention_period: 168h
         # HA: 2 replicas form a memberlist ring. replication_factor: 1 means
         # the ring distributes streams across pods (no data duplication).
-        # Each pod has its own NFS-backed PVC (StatefulSet).
         singleBinary:
           replicas: 2
           affinity:
             podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/instance: loki
-                      app.kubernetes.io/component: single-binary
-                  topologyKey: kubernetes.io/hostname
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/instance: loki
+                        app.kubernetes.io/component: single-binary
+                    topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 50m
@@ -64,6 +77,12 @@ spec:
           persistence:
             enabled: true
             size: 10Gi
+            storageClass: nfs
+        # Embedded MinIO for S3-compatible object storage.
+        # Same pattern as Mimir — lightweight, self-contained.
+        minio:
+          enabled: true
+          persistence:
             storageClass: nfs
         # Nginx gateway — single API endpoint.
         # resolver must be the CoreDNS ClusterIP; the default
@@ -76,12 +95,14 @@ spec:
             resolver: "10.43.0.10"
           affinity:
             podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/instance: loki
-                      app.kubernetes.io/component: gateway
-                  topologyKey: kubernetes.io/hostname
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/instance: loki
+                        app.kubernetes.io/component: gateway
+                    topologyKey: kubernetes.io/hostname
           resources:
             requests:
               cpu: 10m
@@ -96,7 +117,7 @@ spec:
           replicas: 0
         write:
           replicas: 0
-        # Disable caches (not needed for single binary + filesystem)
+        # Disable caches (not needed for single binary)
         chunksCache:
           enabled: false
         resultsCache:
