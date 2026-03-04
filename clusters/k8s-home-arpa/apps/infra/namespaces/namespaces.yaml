@@ -17,11 +17,14 @@ metadata:
   labels:
     homelab.necdetsanli.io/tier: observability
     homelab.necdetsanli.io/gateway-access: "true"
-    # Grafana init-chown-data (root, CHOWN cap), Mimir-minio, and Loki
-    # sidecar containers cannot satisfy restricted; baseline is sufficient.
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/warn: restricted
-    pod-security.kubernetes.io/audit: restricted
+    # Zabbix Agent DaemonSet requires hostNetwork, hostPath, and hostPort
+    # for node OS monitoring — these are blocked under baseline/restricted.
+    # Grafana init-chown-data, Mimir-minio, and Loki sidecars also need
+    # capabilities beyond restricted. Enforce privileged, warn at baseline
+    # so non-agent pods still produce audit warnings if they drift.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 ---
