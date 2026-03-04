@@ -15,3 +15,6 @@ collections:
 
   - name: community.general
     version: ">=8.0.0"       # timezone (common role)
+
+  - name: kubernetes.core
+    version: ">=4.0.0"       # helm, k8s (alloy_k3s role)
