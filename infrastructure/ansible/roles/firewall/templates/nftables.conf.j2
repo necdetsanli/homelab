@@ -31,6 +31,16 @@ table inet filter {
     }
   }
 
+  set zabbix_agent_sources {
+    type ipv4_addr
+    flags interval
+    elements = {
+{% for src in firewall_zabbix_agent_sources %}
+      {{ src }}{{ "," if not loop.last else "" }}
+{% endfor %}
+    }
+  }
+
 {% if firewall_allow_vrrp and firewall_vrrp_peers | length > 0 %}
   set vrrp_peers {
     type ipv4_addr
@@ -78,6 +88,9 @@ table inet filter {
 
     # --- node_exporter metrics ---
     tcp dport {{ firewall_node_exporter_port }} ip saddr @node_exporter_scrapers counter accept comment "Prometheus node_exporter scrape"
+
+    # --- Zabbix Agent 2 (passive checks from Zabbix Server in K8s) ---
+    tcp dport {{ firewall_zabbix_agent_port }} ip saddr @zabbix_agent_sources counter accept comment "Zabbix Server passive check"
 
 {% if firewall_k3s_host | default(false) %}
     # --- k3s internal (pod → API server + kubelet after kube-proxy DNAT) ---

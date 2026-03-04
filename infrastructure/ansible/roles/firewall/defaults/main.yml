@@ -39,6 +39,14 @@ firewall_node_exporter_port: 9100
 firewall_node_exporter_sources:
   - "10.42.0.0/16"         # K8s pod CIDR (Cilium native routing, L2)
 
+# ── Zabbix Agent 2 (10050) ────────────────────────────────────
+# Zabbix Server runs in K8s (monitoring namespace). Passive checks
+# arrive via Cilium native routing at L2 — bypasses OPNsense.
+# Source is the K8s pod CIDR, same rationale as node_exporter.
+firewall_zabbix_agent_port: 10050
+firewall_zabbix_agent_sources:
+  - "10.42.0.0/16"         # K8s pod CIDR (Cilium native routing, L2)
+
 # ── Docker host forwarding ────────────────────────────────────
 # Enable on hosts running Docker containers (e.g. Rancher).
 # Docker containers rely on the kernel FORWARD chain for all traffic
