@@ -32,20 +32,26 @@ firewall_ssh_rate_limit: "6/minute"
 firewall_ssh_rate_burst: 4
 
 # ── node_exporter (9100) ─────────────────────────────────────
-# Prometheus runs in K8s. Cilium native routing sends pod traffic at L2
-# directly to the target host — bypasses OPNsense. nftables MUST allow it.
-# Inter-VLAN sources (MGMT, SERVERS) are controlled by OPNsense.
+# Prometheus runs in K8s. Cilium masquerades pod→external traffic to
+# the K8s node IP (enableIPv4Masquerade + ipv4NativeRoutingCIDR covers
+# only 10.42.0.0/16). Source IPs at the target host are node IPs,
+# not pod IPs. Inter-VLAN sources controlled by OPNsense.
 firewall_node_exporter_port: 9100
 firewall_node_exporter_sources:
-  - "10.42.0.0/16"         # K8s pod CIDR (Cilium native routing, L2)
+  - "192.168.20.30/32"     # k8s-master-1
+  - "192.168.20.40/32"     # k8s-worker-1
+  - "192.168.20.41/32"     # k8s-worker-2
 
 # ── Zabbix Agent 2 (10050) ────────────────────────────────────
 # Zabbix Server runs in K8s (monitoring namespace). Passive checks
-# arrive via Cilium native routing at L2 — bypasses OPNsense.
-# Source is the K8s pod CIDR, same rationale as node_exporter.
+# are masqueraded by Cilium to the K8s node IP (destination is
+# outside ipv4NativeRoutingCIDR 10.42.0.0/16). Source IPs at the
+# target host are node IPs, not pod IPs.
 firewall_zabbix_agent_port: 10050
 firewall_zabbix_agent_sources:
-  - "10.42.0.0/16"         # K8s pod CIDR (Cilium native routing, L2)
+  - "192.168.20.30/32"     # k8s-master-1
+  - "192.168.20.40/32"     # k8s-worker-1
+  - "192.168.20.41/32"     # k8s-worker-2
 
 # ── Docker host forwarding ────────────────────────────────────
 # Enable on hosts running Docker containers (e.g. Rancher).
