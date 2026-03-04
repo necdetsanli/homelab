@@ -1,0 +1,28 @@
+# Allow bare-metal Zabbix Agent 2 hosts (192.168.20.0/24) to connect
+# to the Zabbix Server in K8s for active checks (agent → server).
+#
+# Port 10051 is the Zabbix trapper port where agents send data.
+#
+# Note: For passive checks (server → agent on port 10050), the
+# Zabbix Server pod initiates outbound connections to bare-metal IPs.
+# Cilium allows this by default (egress is unrestricted).
+# Ensure bare-metal firewall rules allow TCP 10050 from K8s pod CIDR.
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-agent-to-zabbix-server
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: zabbix-server
+  ingress:
+    - fromCIDR:
+        - 192.168.20.0/24
+      toPorts:
+        - ports:
+            - port: "10051"
+              protocol: TCP

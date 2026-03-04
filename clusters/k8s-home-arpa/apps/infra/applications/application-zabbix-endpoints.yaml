@@ -1,0 +1,36 @@
+# Zabbix Endpoints — Cilium LB-IPAM backed trapper endpoint for
+# bare-metal Zabbix Agent 2 hosts to connect to Zabbix Server in K8s.
+#
+# Resources:
+#   - zabbix-server-lb (Service LB → 192.168.20.204:10051)
+#   - CiliumNetworkPolicy allowing 192.168.20.0/24 ingress
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zabbix-endpoints
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: platform
+  source:
+    repoURL: "https://github.com/necdetsanli/homelab.git"
+    targetRevision: "main"
+    path: clusters/k8s-home-arpa/apps/infra/zabbix-endpoints
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: "argocd"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

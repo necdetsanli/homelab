@@ -1,0 +1,66 @@
+---
+# zabbix_agent2 — Zabbix Agent 2 for bare-metal hosts
+
+# ── Zabbix APT repository ───────────────────────────────────
+# Version must match the Zabbix Server version in K8s (7.0.x LTS)
+zabbix_agent2_major_version: "7.0"
+zabbix_agent2_repo_deb_url: "https://repo.zabbix.com/zabbix/{{ zabbix_agent2_major_version }}/release/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest_{{ zabbix_agent2_major_version }}+ubuntu24.04_all.deb"
+
+# ── Server connection ────────────────────────────────────────
+# Cilium LB-IPAM VIP exposing Zabbix Server in K8s.
+# Created by zabbix-server-lb.yaml in the alloy-endpoints equivalent.
+zabbix_agent2_server: "192.168.20.204"
+zabbix_agent2_server_active: "192.168.20.204"
+
+# ── Agent identity ───────────────────────────────────────────
+# Defaults to the inventory short hostname (e.g. "vault-1").
+zabbix_agent2_hostname: "{{ inventory_hostname_short }}"
+
+# ── Network ──────────────────────────────────────────────────
+# Listen address for passive checks (Zabbix Server → Agent).
+# Binds to the host's inventory IP to avoid exposure on other interfaces.
+zabbix_agent2_listen_ip: "{{ ansible_host }}"
+zabbix_agent2_listen_port: 10050
+
+# ── TLS / PSK encryption ────────────────────────────────────
+# Set to "psk" to enable PSK-based encryption (recommended).
+# Requires zabbix_agent2_tls_psk_identity and zabbix_agent2_tls_psk_value
+# to be set (ideally via Ansible Vault).
+zabbix_agent2_tls_connect: "unencrypted"
+zabbix_agent2_tls_accept: "unencrypted"
+# zabbix_agent2_tls_psk_identity: "PSK_{{ inventory_hostname_short }}"
+# zabbix_agent2_tls_psk_value: ""  # 64-char hex string — store in vault.yml
+zabbix_agent2_tls_psk_file: "/etc/zabbix/zabbix_agent2.psk"
+
+# ── Logging ──────────────────────────────────────────────────
+zabbix_agent2_log_type: "system"  # "system" = journald, "file", "console"
+zabbix_agent2_log_file: ""        # only used if log_type = "file"
+zabbix_agent2_debug_level: 3      # 0=basic, 1=critical, 2=error, 3=warning, 4=debug
+
+# ── Timeouts ─────────────────────────────────────────────────
+zabbix_agent2_timeout: 10
+
+# ── Plugin control ───────────────────────────────────────────
+# Disable unused plugins to reduce attack surface.
+zabbix_agent2_disabled_plugins:
+  - Docker
+  - MongoDB
+  - MQTT
+  - MySQL
+  - Oracle
+  - PostgreSQL
+  - Redis
+  - Smart
+  - Memcached
+  - Ember
+
+# ── User parameters (custom checks) ─────────────────────────
+# List of UserParameter lines to add to the config.
+# Example: ["vfs.dev.smart[*],sudo smartctl -a $1 | grep -i 'overall-health'"]
+zabbix_agent2_user_parameters: []
+
+# ── Allowed keys ─────────────────────────────────────────────
+# Empty = allow all. Restrict in production if needed.
+# Example: ["system.*", "vfs.*", "net.*", "proc.*"]
+zabbix_agent2_allow_key: []
+zabbix_agent2_deny_key: []

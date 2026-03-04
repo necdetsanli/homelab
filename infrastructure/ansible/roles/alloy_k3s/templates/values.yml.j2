@@ -1,0 +1,171 @@
+# {{ ansible_managed }}
+# Helm values for grafana/alloy on k3s ({{ inventory_hostname_short }})
+---
+alloy:
+  configMap:
+    content: |
+      // Grafana Alloy — k3s telemetry agent ({{ inventory_hostname_short }})
+      // journald → Loki, node_exporter → Mimir, self-monitoring → Mimir
+
+      logging {
+        level  = "{{ alloy_k3s_log_level }}"
+        format = "logfmt"
+      }
+
+      // ── Self-monitoring ─────────────────────────────────
+      prometheus.exporter.self "alloy" { }
+
+      prometheus.scrape "self" {
+        targets         = prometheus.exporter.self.alloy.targets
+        forward_to      = [prometheus.relabel.self.receiver]
+        scrape_interval = "{{ alloy_k3s_scrape_interval }}"
+        job_name        = "alloy"
+      }
+
+      prometheus.relabel "self" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+        rule {
+          target_label = "instance"
+          replacement  = "{{ inventory_hostname_short }}"
+        }
+        rule {
+          target_label = "cluster"
+          replacement  = "{{ alloy_k3s_cluster_label }}"
+        }
+      }
+
+      // ── Journald → Loki ─────────────────────────────────
+      loki.source.journal "system" {
+        forward_to    = [loki.relabel.journal.receiver]
+        relabel_rules = discovery.relabel.journal_meta.rules
+        labels        = {
+          job  = "journal",
+          host = "{{ inventory_hostname_short }}",
+        }
+      }
+
+      discovery.relabel "journal_meta" {
+        targets = []
+        rule {
+          source_labels = ["__journal__systemd_unit"]
+          target_label  = "unit"
+        }
+        rule {
+          source_labels = ["__journal_priority_keyword"]
+          target_label  = "level"
+        }
+        rule {
+          source_labels = ["__journal__transport"]
+          target_label  = "transport"
+        }
+        rule {
+          source_labels = ["__journal__systemd_slice"]
+          target_label  = "slice"
+        }
+        rule {
+          source_labels = ["__journal_syslog_identifier"]
+          target_label  = "syslog_id"
+        }
+      }
+
+      loki.relabel "journal" {
+        forward_to = [loki.write.default.receiver]
+        rule {
+          action = "labelkeep"
+          regex  = "job|host|unit|level|transport|slice|syslog_id"
+        }
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "{{ alloy_k3s_loki_push_url }}"
+        }
+        external_labels = {
+          host    = "{{ inventory_hostname_short }}",
+          cluster = "{{ alloy_k3s_cluster_label }}",
+          env     = "{{ alloy_k3s_env_label }}",
+        }
+      }
+
+      // ── node_exporter → Mimir ───────────────────────────
+      // Scrapes the host's node_exporter via hostNetwork.
+      prometheus.scrape "node_exporter" {
+        targets = [{
+          __address__ = "{{ ansible_host }}:{{ alloy_k3s_node_exporter_port }}",
+        }]
+        forward_to      = [prometheus.relabel.node_exporter.receiver]
+        scrape_interval = "{{ alloy_k3s_scrape_interval }}"
+        scrape_timeout  = "{{ alloy_k3s_scrape_timeout }}"
+        job_name        = "node_exporter"
+      }
+
+      prometheus.relabel "node_exporter" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+        rule {
+          target_label = "instance"
+          replacement  = "{{ inventory_hostname_short }}"
+        }
+        rule {
+          target_label = "cluster"
+          replacement  = "{{ alloy_k3s_cluster_label }}"
+        }
+      }
+
+      prometheus.remote_write "mimir" {
+        endpoint {
+          url = "{{ alloy_k3s_mimir_push_url }}"
+          queue_config {
+            capacity             = 10000
+            max_shards           = 5
+            min_shards           = 1
+            max_samples_per_send = 2000
+            batch_send_deadline  = "5s"
+            min_backoff          = "500ms"
+            max_backoff          = "5m"
+            retry_on_http_429    = true
+          }
+        }
+        wal {
+          truncate_frequency = "2h"
+          max_keepalive_time = "8h"
+        }
+      }
+
+  # Mount host journal so loki.source.journal can read it
+  mounts:
+    varlog: true
+    extra:
+      - name: journal
+        mountPath: /var/log/journal
+        readOnly: true
+      - name: machine-id
+        mountPath: /etc/machine-id
+        readOnly: true
+
+  # Resources — lightweight for single-node k3s
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# DaemonSet — runs on every k3s node (just one for Rancher)
+controller:
+  type: daemonset
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+  volumes:
+    extra:
+      - name: journal
+        hostPath:
+          path: /var/log/journal
+      - name: machine-id
+        hostPath:
+          path: /etc/machine-id

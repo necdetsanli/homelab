@@ -1,16 +1,48 @@
 ---
-# Grafana Alloy — bare-metal telemetry agent
-# Ships journald logs → Loki, node_exporter metrics → Mimir
+# Grafana Alloy — enterprise-grade bare-metal telemetry agent
+# Pipelines: journald → Loki, node_exporter → Mimir, self-monitoring → Mimir
 
-# APT repository
+# ── APT repository ───────────────────────────────────────────
 alloy_gpg_key_url: "https://apt.grafana.com/gpg.key"
 alloy_gpg_keyring: "/usr/share/keyrings/grafana.gpg"
 alloy_repo_url: "https://apt.grafana.com"
 
-# Push endpoints (Cilium LB-IPAM VIPs inside K8s)
+# ── Push endpoints (Cilium LB-IPAM VIPs inside K8s) ─────────
 alloy_loki_push_url: "http://192.168.20.202/loki/api/v1/push"
 alloy_mimir_push_url: "http://192.168.20.203/api/v1/push"
 
-# Scrape settings
+# ── Multi-tenancy (leave empty for single-tenant mode) ──────
+alloy_loki_tenant_id: ""
+alloy_mimir_tenant_id: ""
+
+# ── Basic auth (leave empty to disable) ─────────────────────
+# alloy_loki_basic_auth_user: ""
+# alloy_loki_basic_auth_password: ""
+# alloy_mimir_basic_auth_user: ""
+# alloy_mimir_basic_auth_password: ""
+
+# ── Scrape settings ─────────────────────────────────────────
 alloy_scrape_interval: "30s"
+alloy_scrape_timeout: "10s"
 alloy_node_exporter_port: 9100
+
+# ── Labels ───────────────────────────────────────────────────
+alloy_env_label: "production"
+
+# ── Metric cardinality control ───────────────────────────────
+# Regex to keep only matching metric names (empty = keep all).
+# Example: "node_cpu.*|node_memory.*|node_disk.*|node_filesystem.*|node_network.*"
+# alloy_metric_keep_regex: ""
+
+# ── Queue / retry (shared by Loki and Mimir endpoints) ──────
+alloy_queue_capacity: 10000
+alloy_queue_max_shards: 5
+alloy_queue_max_samples_per_send: 2000
+alloy_queue_batch_deadline: "5s"
+
+# ── WAL — write-ahead-log for metrics remote_write ──────────
+alloy_wal_truncate_frequency: "2h"
+alloy_wal_max_keepalive: "8h"
+
+# ── Logging ──────────────────────────────────────────────────
+alloy_log_level: "warn"

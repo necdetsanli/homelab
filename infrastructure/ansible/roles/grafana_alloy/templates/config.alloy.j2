@@ -1,20 +1,62 @@
 // {{ ansible_managed }}
 //
-// Grafana Alloy — bare-metal telemetry agent
-// Ships journald logs → Loki, node_exporter metrics → Mimir
+// Grafana Alloy — enterprise-grade bare-metal telemetry agent
+// Pipelines:
+//   journald logs  → relabel → Loki   ({{ alloy_loki_push_url }})
+//   node_exporter  → relabel → Mimir  ({{ alloy_mimir_push_url }})
+//   self-monitoring → relabel → Mimir  (internal health metrics)
 
-// ─── Journal → Loki ────────────────────────────────────────
+// ─── Logging ───────────────────────────────────────────────
+//
+// Alloy's own log level — keeps journal noise down in production.
+logging {
+  level  = "{{ alloy_log_level }}"
+  format = "logfmt"
+}
+
+// ─── Self-monitoring ───────────────────────────────────────
+//
+// Expose internal metrics so we can alert on dropped samples,
+// failed pushes, WAL corruption, etc.
+prometheus.exporter.self "alloy" { }
+
+prometheus.scrape "self" {
+  targets         = prometheus.exporter.self.alloy.targets
+  forward_to      = [prometheus.relabel.self.receiver]
+  scrape_interval = "{{ alloy_scrape_interval }}"
+  job_name        = "alloy"
+}
+
+prometheus.relabel "self" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    target_label = "instance"
+    replacement  = "{{ inventory_hostname_short }}"
+  }
+  rule {
+    target_label = "cluster"
+    replacement  = "bare-metal"
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOGS  —  journald → Loki
+// ═══════════════════════════════════════════════════════════
 
 loki.source.journal "system" {
-  forward_to = [loki.relabel.journal.receiver]
-  labels     = {
+  forward_to    = [loki.relabel.journal.receiver]
+  relabel_rules = discovery.relabel.journal_meta.rules
+  labels        = {
     job  = "journal",
     host = "{{ inventory_hostname_short }}",
   }
 }
 
-loki.relabel "journal" {
-  forward_to = [loki.write.default.receiver]
+// Pull additional journal metadata into the log stream so
+// Grafana Explore queries can filter on service/slice/transport.
+discovery.relabel "journal_meta" {
+  targets = []
 
   rule {
     source_labels = ["__journal__systemd_unit"]
@@ -24,32 +66,128 @@ loki.relabel "journal" {
     source_labels = ["__journal_priority_keyword"]
     target_label  = "level"
   }
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+  rule {
+    source_labels = ["__journal__systemd_slice"]
+    target_label  = "slice"
+  }
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "source_host"
+  }
+  rule {
+    source_labels = ["__journal_syslog_identifier"]
+    target_label  = "syslog_id"
+  }
+}
+
+loki.relabel "journal" {
+  forward_to = [loki.write.default.receiver]
+
+  // Keep only the labels we explicitly set; drop random __journal_* leftovers.
+  rule {
+    action = "labelkeep"
+    regex  = "job|host|unit|level|transport|slice|source_host|syslog_id"
+  }
 }
 
 loki.write "default" {
   endpoint {
-    url = "{{ alloy_loki_push_url }}"
+    url            = "{{ alloy_loki_push_url }}"
+    tenant_id      = "{{ alloy_loki_tenant_id }}"
+{% if alloy_loki_basic_auth_user is defined and alloy_loki_basic_auth_user %}
+    basic_auth {
+      username = "{{ alloy_loki_basic_auth_user }}"
+      password = "{{ alloy_loki_basic_auth_password }}"
+    }
+{% endif %}
+
+    // Retry & queue — survive transient Loki outages.
+    queue_config {
+      capacity          = {{ alloy_queue_capacity }}
+      max_shards        = {{ alloy_queue_max_shards }}
+      min_shards        = 1
+      max_samples_per_send = {{ alloy_queue_max_samples_per_send }}
+      batch_send_deadline  = "{{ alloy_queue_batch_deadline }}"
+      min_backoff          = "500ms"
+      max_backoff          = "5m"
+      retry_on_http_429    = true
+    }
   }
   external_labels = {
     host    = "{{ inventory_hostname_short }}",
     cluster = "bare-metal",
+    env     = "{{ alloy_env_label }}",
   }
 }
 
-// ─── node_exporter → Mimir ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  METRICS  —  node_exporter → Mimir
+// ═══════════════════════════════════════════════════════════
 
 prometheus.scrape "node_exporter" {
   targets = [{
     __address__ = "{{ ansible_host }}:{{ alloy_node_exporter_port }}",
-    host        = "{{ inventory_hostname_short }}",
   }]
-  forward_to      = [prometheus.remote_write.mimir.receiver]
+  forward_to      = [prometheus.relabel.node_exporter.receiver]
   scrape_interval = "{{ alloy_scrape_interval }}"
+  scrape_timeout  = "{{ alloy_scrape_timeout }}"
   job_name        = "node_exporter"
+}
+
+// Inject host/cluster identity before shipping to Mimir so
+// dashboards can filter per-host without relying on __address__.
+prometheus.relabel "node_exporter" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    target_label = "instance"
+    replacement  = "{{ inventory_hostname_short }}"
+  }
+  rule {
+    target_label = "cluster"
+    replacement  = "bare-metal"
+  }
+{% if alloy_metric_keep_regex is defined and alloy_metric_keep_regex %}
+  // Optional: keep only metrics matching this regex to reduce cardinality.
+  rule {
+    source_labels = ["__name__"]
+    regex         = "{{ alloy_metric_keep_regex }}"
+    action        = "keep"
+  }
+{% endif %}
 }
 
 prometheus.remote_write "mimir" {
   endpoint {
-    url = "{{ alloy_mimir_push_url }}"
+    url       = "{{ alloy_mimir_push_url }}"
+    tenant_id = "{{ alloy_mimir_tenant_id }}"
+{% if alloy_mimir_basic_auth_user is defined and alloy_mimir_basic_auth_user %}
+    basic_auth {
+      username = "{{ alloy_mimir_basic_auth_user }}"
+      password = "{{ alloy_mimir_basic_auth_password }}"
+    }
+{% endif %}
+
+    // WAL-backed queue — buffers samples to disk on back-pressure.
+    queue_config {
+      capacity          = {{ alloy_queue_capacity }}
+      max_shards        = {{ alloy_queue_max_shards }}
+      min_shards        = 1
+      max_samples_per_send = {{ alloy_queue_max_samples_per_send }}
+      batch_send_deadline  = "{{ alloy_queue_batch_deadline }}"
+      min_backoff          = "500ms"
+      max_backoff          = "5m"
+      retry_on_http_429    = true
+    }
+  }
+
+  // WAL keeps ~1h of data on disk to survive agent restarts.
+  wal {
+    truncate_frequency = "{{ alloy_wal_truncate_frequency }}"
+    max_keepalive_time = "{{ alloy_wal_max_keepalive }}"
   }
 }

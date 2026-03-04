@@ -1,0 +1,16 @@
+---
+# Deploy Grafana Alloy via Helm to Rancher's k3s cluster.
+# Collects journald logs and node_exporter metrics, ships to
+# Loki + Mimir on the main RKE2 cluster via LB-IPAM VIPs.
+#
+# Prerequisites:
+#   - node_exporter running on the target host
+#   - kubernetes.core collection: ansible-galaxy collection install kubernetes.core
+#   - Helm binary on the target: which helm
+#
+# Usage:
+#   ansible-playbook playbooks/alloy-k3s.yml
+- name: Deploy Grafana Alloy to k3s (Helm)
+  hosts: rancher
+  roles:
+    - alloy_k3s

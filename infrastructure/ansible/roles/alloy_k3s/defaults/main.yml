@@ -1,0 +1,28 @@
+---
+# alloy_k3s — deploy Grafana Alloy via Helm to k3s
+
+# Helm chart settings
+alloy_k3s_chart_repo: "https://grafana.github.io/helm-charts"
+alloy_k3s_chart_name: "grafana/alloy"
+alloy_k3s_chart_version: "1.6.1"
+alloy_k3s_release_name: "alloy"
+alloy_k3s_namespace: "monitoring"
+
+# kubeconfig path on the target k3s host
+alloy_k3s_kubeconfig: "/etc/rancher/k3s/k3s.yaml"
+
+# Push endpoints (Cilium LB-IPAM VIPs on the main RKE2 cluster)
+alloy_k3s_loki_push_url: "http://192.168.20.202/loki/api/v1/push"
+alloy_k3s_mimir_push_url: "http://192.168.20.203/api/v1/push"
+
+# Scrape settings
+alloy_k3s_scrape_interval: "30s"
+alloy_k3s_scrape_timeout: "10s"
+alloy_k3s_node_exporter_port: 9100
+
+# Labels
+alloy_k3s_env_label: "production"
+alloy_k3s_cluster_label: "rancher-k3s"
+
+# Logging
+alloy_k3s_log_level: "warn"

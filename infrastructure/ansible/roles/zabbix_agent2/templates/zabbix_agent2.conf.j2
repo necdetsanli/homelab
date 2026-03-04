@@ -1,0 +1,63 @@
+# {{ ansible_managed }}
+# Zabbix Agent 2 — {{ zabbix_agent2_hostname }}
+# Docs: https://www.zabbix.com/documentation/{{ zabbix_agent2_major_version }}/en/manual/appendix/config/zabbix_agent2
+
+# ── Server connection ────────────────────────────────────────
+# Passive checks — Zabbix Server connects to this agent.
+Server={{ zabbix_agent2_server }}
+
+# Active checks — agent connects to Zabbix Server.
+ServerActive={{ zabbix_agent2_server_active }}
+
+# ── Agent identity ───────────────────────────────────────────
+Hostname={{ zabbix_agent2_hostname }}
+
+# ── Network ──────────────────────────────────────────────────
+ListenIP={{ zabbix_agent2_listen_ip }}
+ListenPort={{ zabbix_agent2_listen_port }}
+
+# ── Logging ──────────────────────────────────────────────────
+{% if zabbix_agent2_log_type == "system" %}
+# Log to journald — use `journalctl -u zabbix-agent2` to view.
+LogType=system
+{% elif zabbix_agent2_log_type == "file" %}
+LogType=file
+LogFile={{ zabbix_agent2_log_file | default("/var/log/zabbix/zabbix_agent2.log") }}
+LogFileSize=10
+{% else %}
+LogType=console
+{% endif %}
+DebugLevel={{ zabbix_agent2_debug_level }}
+
+# ── Timeouts ─────────────────────────────────────────────────
+Timeout={{ zabbix_agent2_timeout }}
+
+# ── TLS / PSK ───────────────────────────────────────────────
+{% if zabbix_agent2_tls_connect == "psk" %}
+TLSConnect=psk
+TLSAccept=psk
+TLSPSKIdentity={{ zabbix_agent2_tls_psk_identity | default("PSK_" + zabbix_agent2_hostname) }}
+TLSPSKFile={{ zabbix_agent2_tls_psk_file }}
+{% else %}
+TLSConnect={{ zabbix_agent2_tls_connect }}
+TLSAccept={{ zabbix_agent2_tls_accept }}
+{% endif %}
+
+# ── Disabled plugins ─────────────────────────────────────────
+# Reduce attack surface by disabling unused built-in plugins.
+{% for plugin in zabbix_agent2_disabled_plugins %}
+Plugins.{{ plugin }}.System.Path=
+{% endfor %}
+
+# ── Key ACLs ─────────────────────────────────────────────────
+{% for key in zabbix_agent2_allow_key %}
+AllowKey={{ key }}
+{% endfor %}
+{% for key in zabbix_agent2_deny_key %}
+DenyKey={{ key }}
+{% endfor %}
+
+# ── User parameters ─────────────────────────────────────────
+{% for param in zabbix_agent2_user_parameters %}
+UserParameter={{ param }}
+{% endfor %}

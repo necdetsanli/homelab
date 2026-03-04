@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: necdetsanli
+  description: >-
+    Install and configure Zabbix Agent 2 from the official Zabbix APT
+    repository. Supports active and passive checks, PSK-based TLS
+    encryption, configurable allowed senders, and hardened systemd unit.
+    Points to Zabbix Server running in K8s via Cilium LB-IPAM VIP.
+  namespace: homelab
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - monitoring
+    - zabbix
+    - agent
+    - infrastructure
+
+dependencies: []

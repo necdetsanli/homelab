@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  author: necdetsanli
+  description: >-
+    Deploy Grafana Alloy via Helm to a k3s cluster.
+    Collects journald logs and node metrics, ships to Loki + Mimir
+    via Cilium LB-IPAM VIPs on the main RKE2 cluster.
+  namespace: homelab
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - monitoring
+    - observability
+    - grafana
+    - alloy
+    - k3s
+    - helm
+
+dependencies: []

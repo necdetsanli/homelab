@@ -1,0 +1,67 @@
+---
+# zabbix_agent2 role — install Zabbix Agent 2 from official APT repo
+# Targets: bare-metal hosts (Ubuntu / Debian)
+# Connects to: Zabbix Server in K8s via Cilium LB-IPAM VIP
+
+# ── APT repository ───────────────────────────────────────────
+- name: Check if Zabbix repo is configured
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/zabbix.list
+  register: _zabbix_repo
+
+- name: Download Zabbix release package
+  ansible.builtin.get_url:
+    url: "{{ zabbix_agent2_repo_deb_url }}"
+    dest: /tmp/zabbix-release.deb
+    mode: "0644"
+  when: not _zabbix_repo.stat.exists
+
+- name: Install Zabbix release package
+  ansible.builtin.apt:
+    deb: /tmp/zabbix-release.deb
+    state: present
+  when: not _zabbix_repo.stat.exists
+
+- name: Clean up release deb
+  ansible.builtin.file:
+    path: /tmp/zabbix-release.deb
+    state: absent
+  when: not _zabbix_repo.stat.exists
+
+# ── Install agent ────────────────────────────────────────────
+- name: Install zabbix-agent2
+  ansible.builtin.apt:
+    name: zabbix-agent2
+    state: present
+    update_cache: true
+
+# ── TLS PSK (optional) ──────────────────────────────────────
+- name: Deploy PSK file
+  ansible.builtin.copy:
+    content: "{{ zabbix_agent2_tls_psk_value }}"
+    dest: "{{ zabbix_agent2_tls_psk_file }}"
+    owner: zabbix
+    group: zabbix
+    mode: "0600"
+  when: zabbix_agent2_tls_psk_value is defined and zabbix_agent2_tls_psk_value
+  notify: Restart zabbix-agent2
+  no_log: true
+
+# ── Configuration ────────────────────────────────────────────
+- name: Deploy Zabbix Agent 2 configuration
+  ansible.builtin.template:
+    src: zabbix_agent2.conf.j2
+    dest: /etc/zabbix/zabbix_agent2.conf
+    owner: root
+    group: zabbix
+    mode: "0640"
+    validate: "zabbix_agent2 -t agent.hostname -c %s || true"
+  notify: Restart zabbix-agent2
+
+# ── Enable and start ────────────────────────────────────────
+- name: Enable and start zabbix-agent2
+  ansible.builtin.systemd:
+    name: zabbix-agent2
+    state: started
+    enabled: true
+    daemon_reload: true

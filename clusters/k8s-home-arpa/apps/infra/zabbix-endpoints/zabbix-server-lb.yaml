@@ -1,0 +1,24 @@
+# Zabbix Server endpoint for bare-metal Zabbix Agent 2 connections.
+# Exposes the Zabbix Server trapper port on a Cilium LB-IPAM VIP
+# so agents outside the cluster can send active check data and
+# receive passive check requests.
+#
+# Traffic flow:
+#   Agent (bare-metal) → 192.168.20.204:10051 → zabbix-server pod :10051
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-server-lb
+  namespace: monitoring
+  annotations:
+    lbipam.cilium.io/ips: "192.168.20.204"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: zabbix-server
+  ports:
+    - name: trapper
+      port: 10051
+      targetPort: 10051
+      protocol: TCP

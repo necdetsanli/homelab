@@ -1,0 +1,22 @@
+---
+# Deploy Zabbix Agent 2 to bare-metal hosts for infrastructure monitoring.
+# Connects to Zabbix Server in K8s via Cilium LB-IPAM VIP (192.168.20.204).
+#
+# Prerequisites:
+#   - Zabbix Server running in K8s (monitoring namespace)
+#   - zabbix-server-lb Service created (see zabbix-endpoints/)
+#   - Firewall allows TCP 10050 from Zabbix Server VIP
+#
+# Usage:
+#   ansible-playbook playbooks/zabbix-agent.yml
+#   ansible-playbook playbooks/zabbix-agent.yml --limit vault
+#
+# To enable PSK encryption, set in group_vars/all/vault.yml:
+#   zabbix_agent2_tls_connect: "psk"
+#   zabbix_agent2_tls_accept: "psk"
+#   zabbix_agent2_tls_psk_identity: "PSK_{{ inventory_hostname_short }}"
+#   zabbix_agent2_tls_psk_value: "<64-char-hex>"
+- name: Deploy Zabbix Agent 2
+  hosts: freeipa_enrolled:!k8s_masters:!k8s_workers
+  roles:
+    - zabbix_agent2

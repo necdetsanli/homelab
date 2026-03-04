@@ -32,4 +32,6 @@ resources:
   - application-jaeger.yaml
   # Observability: bare-metal Alloy push endpoints (Loki + Mimir LB VIPs)
   - application-alloy-endpoints.yaml
+  # Observability: bare-metal Zabbix Agent 2 → Zabbix Server LB VIP
+  - application-zabbix-endpoints.yaml
 
