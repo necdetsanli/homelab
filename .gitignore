@@ -10,6 +10,8 @@
 # Local-only files
 # ------------------------------------------------------------------------------
 notes-and-plans/
+.github/copilot-instructions.md
+CLAUDE.md
 
 # Architecture diagrams (under review, will be unignored when ready)
 architecture/
