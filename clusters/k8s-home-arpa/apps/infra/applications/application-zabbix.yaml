@@ -61,9 +61,11 @@ spec:
           # Passive: accept checks from Zabbix Server pod (same cluster)
           ZBX_PASSIVE_ALLOW: true
           ZBX_SERVER_HOST: "zabbix-zabbix-server.monitoring.svc"
-          # Active: agent pushes data to server (enables auto-registration)
+          # Active: agent pushes data to server (enables auto-registration).
+          # ZBX_SERVER_HOST is auto-added to ServerActive by the entrypoint
+          # when ZBX_ACTIVE_ALLOW=true — do NOT set ZBX_ACTIVESERVERS or
+          # the address will be duplicated and agent2 will refuse to start.
           ZBX_ACTIVE_ALLOW: true
-          ZBX_ACTIVESERVERS: "zabbix-zabbix-server.monitoring.svc:10051"
           extraEnv:
             - name: ZBX_HOSTNAMEITEM
               value: "system.hostname"
