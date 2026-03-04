@@ -24,6 +24,6 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: zabbix-web
+          name: zabbix-zabbix-web
           port: 80
           weight: 1
