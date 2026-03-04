@@ -4,7 +4,7 @@
   │  {{ "%-44s" | format(ansible_distribution ~ " " ~ ansible_distribution_version) }}│
   ├──────────────────────────────────────────────┤
   │  IP : {{ "%-37s" | format(ansible_default_ipv4.address | default('N/A')) }}│
-  │  CPU: {{ "%-37s" | format(ansible_processor_vcpus | default('?') | string) }}│
+  │  CPU: {{ "%-37s" | format(ansible_processor_nproc | default(ansible_processor_vcpus) | default('?') | string) }}│
   │  RAM: {{ "%-37s" | format(((ansible_memtotal_mb | default(0)) / 1024) | round(1) | string ~ " GB") }}│
   │  Domain: {{ "%-34s" | format(domain | default('home.arpa')) }}│
   └──────────────────────────────────────────────┘
