@@ -4,7 +4,8 @@
 # ── Zabbix APT repository ───────────────────────────────────
 # Version must match the Zabbix Server version in K8s (7.0.x LTS)
 zabbix_agent2_major_version: "7.0"
-zabbix_agent2_repo_deb_url: "https://repo.zabbix.com/zabbix/{{ zabbix_agent2_major_version }}/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest_{{ zabbix_agent2_major_version }}+ubuntu{{ ansible_distribution_version }}_all.deb"
+zabbix_agent2_repo_deb_url: >-
+  https://repo.zabbix.com/zabbix/{{ zabbix_agent2_major_version }}/{{ ansible_distribution | lower }}/pool/main/z/zabbix-release/zabbix-release_latest_{{ zabbix_agent2_major_version }}+{{ ansible_distribution | lower }}{{ ansible_distribution_version }}_all.deb
 
 # ── Server connection ────────────────────────────────────────
 # Cilium LB-IPAM VIP exposing Zabbix Server in K8s.
