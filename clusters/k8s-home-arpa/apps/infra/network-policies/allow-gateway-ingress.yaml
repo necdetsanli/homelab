@@ -83,7 +83,8 @@ metadata:
 spec:
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/name: zabbix-web
+      app.kubernetes.io/name: zabbix
+      app.kubernetes.io/component: web
   ingress:
     - fromEntities:
         - ingress
