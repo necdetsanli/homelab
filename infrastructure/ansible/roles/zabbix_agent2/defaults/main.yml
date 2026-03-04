@@ -43,24 +43,31 @@ zabbix_agent2_debug_level: 3      # 0=basic, 1=critical, 2=error, 3=warning, 4=d
 # ── Timeouts ─────────────────────────────────────────────────
 zabbix_agent2_timeout: 10
 
-# ── Plugin control ───────────────────────────────────────────
-# Disable unused plugins to reduce attack surface.
-zabbix_agent2_disabled_plugins:
-  - Docker
-  - MongoDB
-  - MQTT
-  - MySQL
-  - Oracle
-  - PostgreSQL
-  - Redis
-  - Smart
-  - Memcached
-  - Ember
-
 # ── User parameters (custom checks) ─────────────────────────
 # List of UserParameter lines to add to the config.
 # Example: ["vfs.dev.smart[*],sudo smartctl -a $1 | grep -i 'overall-health'"]
 zabbix_agent2_user_parameters: []
+
+# ── Loadable plugins (opt-in) ────────────────────────────────
+# Each entry is an APT package name.  The plugin is only loaded
+# when its package is installed — no config needed to "disable".
+# Available:
+#   - zabbix-agent2-plugin-mongodb
+#   - zabbix-agent2-plugin-postgresql
+#   - zabbix-agent2-plugin-mssql
+# Example:
+#   zabbix_agent2_plugins:
+#     - zabbix-agent2-plugin-postgresql
+zabbix_agent2_plugins: []
+
+# ── Plugin configuration (free-form) ────────────────────────
+# Dict of raw Plugins.* lines to inject into the config.
+# Keys are the Zabbix config directives, values are their settings.
+# Example:
+#   zabbix_agent2_plugin_config:
+#     "Plugins.PostgreSQL.Sessions.local.Uri": "tcp://localhost:5432"
+#     "Plugins.PostgreSQL.Sessions.local.User": "zbx_monitor"
+zabbix_agent2_plugin_config: {}
 
 # ── Allowed keys ─────────────────────────────────────────────
 # Empty = allow all. Restrict in production if needed.

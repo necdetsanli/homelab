@@ -43,10 +43,9 @@ TLSConnect={{ zabbix_agent2_tls_connect }}
 TLSAccept={{ zabbix_agent2_tls_accept }}
 {% endif %}
 
-# ── Disabled plugins ─────────────────────────────────────────
-# Reduce attack surface by disabling unused built-in plugins.
-{% for plugin in zabbix_agent2_disabled_plugins %}
-Plugins.{{ plugin }}.System.Path=
+# ── Plugin configuration ─────────────────────────────────────
+{% for key, value in zabbix_agent2_plugin_config.items() %}
+{{ key }}={{ value }}
 {% endfor %}
 
 # ── Key ACLs ─────────────────────────────────────────────────

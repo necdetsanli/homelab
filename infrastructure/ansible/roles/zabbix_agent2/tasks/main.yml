@@ -35,6 +35,14 @@
     state: present
     update_cache: true
 
+# ── Loadable plugins (optional) ──────────────────────────────
+- name: Install Zabbix Agent 2 plugins
+  ansible.builtin.apt:
+    name: "{{ zabbix_agent2_plugins }}"
+    state: present
+  when: zabbix_agent2_plugins | length > 0
+  notify: Restart zabbix-agent2
+
 # ── TLS PSK (optional) ──────────────────────────────────────
 - name: Deploy PSK file
   ansible.builtin.copy:
@@ -55,7 +63,7 @@
     owner: root
     group: zabbix
     mode: "0640"
-    validate: "zabbix_agent2 -t agent.hostname -c %s || true"
+    # validate: skipped — zabbix_agent2 -t loads plugins even for config check
   notify: Restart zabbix-agent2
 
 # ── Enable and start ────────────────────────────────────────
