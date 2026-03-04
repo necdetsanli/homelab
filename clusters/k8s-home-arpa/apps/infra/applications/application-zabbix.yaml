@@ -46,12 +46,29 @@ spec:
         # the node's real IP; hostRootFsMount mounts / at /host/root for
         # filesystem monitoring. Replaces sidecar — the local agent on
         # the server's node handles that role automatically.
+        #
+        # Active checks (agent→server) enabled so agents self-register
+        # and push data without the server needing agent IPs. This
+        # eliminates the 127.0.0.1 problem on the auto-created
+        # "Zabbix server" host. HostMetadata "K8sNode" is used by
+        # auto-registration actions to assign templates/groups.
         zabbixAgent:
           enabled: true
           runAsSidecar: false
           runAsDaemonSet: true
           hostNetwork: true
           hostRootFsMount: true
+          # Passive: accept checks from Zabbix Server pod (same cluster)
+          ZBX_PASSIVE_ALLOW: true
+          ZBX_SERVER_HOST: "zabbix-zabbix-server.monitoring.svc"
+          # Active: agent pushes data to server (enables auto-registration)
+          ZBX_ACTIVE_ALLOW: true
+          ZBX_ACTIVESERVERS: "zabbix-zabbix-server.monitoring.svc:10051"
+          extraEnv:
+            - name: ZBX_HOSTNAMEITEM
+              value: "system.hostname"
+            - name: ZBX_METADATA
+              value: "K8sNode"
           resources:
             requests:
               cpu: 10m

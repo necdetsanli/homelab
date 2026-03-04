@@ -19,6 +19,13 @@ zabbix_agent2_server_active: "192.168.20.204"
 # Defaults to the inventory short hostname (e.g. "vault-1").
 zabbix_agent2_hostname: "{{ inventory_hostname_short }}"
 
+# ── Host metadata (auto-registration) ───────────────────────
+# Zabbix Server auto-registration actions match on HostMetadata
+# to assign templates and host groups automatically. This enables
+# fully GitOps-managed host enrollment without manual UI clicks.
+# K8s DaemonSet agents use "K8sNode" — keep values in sync.
+zabbix_agent2_host_metadata: "BareMetal"
+
 # ── Network ──────────────────────────────────────────────────
 # Listen address for passive checks (Zabbix Server → Agent).
 # Binds to the host's inventory IP to avoid exposure on other interfaces.

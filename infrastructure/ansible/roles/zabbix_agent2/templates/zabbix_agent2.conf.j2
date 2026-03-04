@@ -11,6 +11,9 @@ ServerActive={{ zabbix_agent2_server_active }}
 
 # ── Agent identity ───────────────────────────────────────────
 Hostname={{ zabbix_agent2_hostname }}
+{% if zabbix_agent2_host_metadata | default("") | length > 0 %}
+HostMetadata={{ zabbix_agent2_host_metadata }}
+{% endif %}
 
 # ── Network ──────────────────────────────────────────────────
 ListenIP={{ zabbix_agent2_listen_ip }}
