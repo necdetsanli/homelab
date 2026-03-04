@@ -41,10 +41,17 @@ spec:
               cpu: 200m
               memory: 256Mi
         # In 7.x the key is zabbixAgent (default image is zabbix-agent2).
-        # Runs as a sidecar in the zabbix-server pod.
+        # DaemonSet mode: agent runs on every K8s node for host OS metrics
+        # (CPU, disk, memory of the underlying VMs). hostNetwork exposes
+        # the node's real IP; hostRootFsMount mounts / at /host/root for
+        # filesystem monitoring. Replaces sidecar — the local agent on
+        # the server's node handles that role automatically.
         zabbixAgent:
           enabled: true
-          runAsSidecar: true
+          runAsSidecar: false
+          runAsDaemonSet: true
+          hostNetwork: true
+          hostRootFsMount: true
           resources:
             requests:
               cpu: 10m
