@@ -10,23 +10,13 @@
     repo_url: "{{ alloy_k3s_chart_repo }}"
     kubeconfig: "{{ alloy_k3s_kubeconfig }}"
 
-- name: Create monitoring namespace
-  kubernetes.core.k8s:
-    kubeconfig: "{{ alloy_k3s_kubeconfig }}"
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: "{{ alloy_k3s_namespace }}"
-
 - name: Deploy Alloy Helm chart
   kubernetes.core.helm:
     name: "{{ alloy_k3s_release_name }}"
     chart_ref: "{{ alloy_k3s_chart_name }}"
     chart_version: "{{ alloy_k3s_chart_version }}"
     release_namespace: "{{ alloy_k3s_namespace }}"
-    create_namespace: false
+    create_namespace: true
     kubeconfig: "{{ alloy_k3s_kubeconfig }}"
     wait: true
     timeout: "5m0s"
