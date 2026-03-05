@@ -52,12 +52,27 @@ spec:
         # eliminates the 127.0.0.1 problem on the auto-created
         # "Zabbix server" host. HostMetadata "K8sNode" is used by
         # auto-registration actions to assign templates/groups.
+        #
+        # ZBX_HOSTINTERFACE via downward API: Cilium eBPF masquerade
+        # SNATs hostNetwork→ClusterIP traffic to a pod CIDR IP, so
+        # auto-registration records a pod IP instead of the node IP.
+        # Explicitly report the node IP via status.hostIP so the
+        # Zabbix host interface is correct for passive checks.
         zabbixAgent:
           enabled: true
           runAsSidecar: false
           runAsDaemonSet: true
           hostNetwork: true
           hostRootFsMount: true
+          # Tolerate control-plane taint so the agent runs on ALL nodes
+          # including masters. RKE2 CIS 1.8 profile sets both taints.
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: "Exists"
+              effect: "NoSchedule"
+            - key: "node-role.kubernetes.io/master"
+              operator: "Exists"
+              effect: "NoSchedule"
           # Passive: accept checks from Zabbix Server pod (same cluster)
           ZBX_PASSIVE_ALLOW: true
           ZBX_SERVER_HOST: "zabbix-zabbix-server.monitoring.svc"
@@ -71,6 +86,13 @@ spec:
               value: "system.hostname"
             - name: ZBX_METADATA
               value: "K8sNode"
+            # Report the real node IP as the agent interface.
+            # Without this, auto-registration records the Cilium SNAT'd
+            # pod CIDR IP, making passive checks unreachable.
+            - name: ZBX_HOSTINTERFACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
           resources:
             requests:
               cpu: 10m
