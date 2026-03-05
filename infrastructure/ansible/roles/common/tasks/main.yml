@@ -113,7 +113,7 @@
   ansible.builtin.copy:
     dest: /etc/systemd/system/ansible-apt-upgrade.service
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit
       [Unit]
       Description=Ansible weekly apt upgrade for all hosts
       After=network-online.target
@@ -137,7 +137,7 @@
   ansible.builtin.copy:
     dest: /etc/systemd/system/ansible-apt-upgrade.timer
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit
       [Unit]
       Description=Weekly Ansible apt upgrade timer
 
