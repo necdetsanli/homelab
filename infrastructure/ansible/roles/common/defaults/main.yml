@@ -35,9 +35,19 @@ common_packages_ubuntu:
   - software-properties-common
 
 # ── Unattended upgrades ─────────────────────────────────────
-common_unattended_upgrades: true
-common_unattended_upgrades_origins:
-  - "${distro_id}:${distro_codename}-security"
+# Disabled: Ansible owns the patching lifecycle via a weekly systemd
+# timer that runs apt-upgrade.yml. This avoids apt lock races that
+# block Ansible runs and provides a Git-auditable upgrade trail.
+# Wazuh vulnerability detection alerts on unpatched CVEs.
+common_unattended_upgrades: false
+
+# ── Scheduled apt upgrade (systemd timer) ────────────────────
+# Runs on the Ansible controller only (ansible.home.arpa).
+# Timer fires weekly on Monday at 04:00 local time — before
+# Renovate's Monday-morning Helm/image bumps (07:00 Istanbul).
+common_apt_upgrade_timer_enabled: true
+common_apt_upgrade_timer_calendar: "Mon *-*-* 04:00:00"
+common_apt_upgrade_playbook: "/opt/homelab/infrastructure/ansible/playbooks/apt-upgrade.yml"
 
 # ── Kernel tuning (sysctl) ──────────────────────────────────
 common_sysctl:
