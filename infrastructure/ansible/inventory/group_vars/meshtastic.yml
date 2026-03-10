@@ -1,5 +1,11 @@
 ---
 # Meshtastic LXC — firewall rules
+
+# Docker Compose creates a custom bridge (br-*) for container networking.
+# FORWARD chain must allow traffic through this bridge for port mappings to work.
+firewall_docker_host: true
+firewall_docker_bridge: "br-cb7826b613a8"
+
 # Port: 8080 (web UI via HAProxy)
 firewall_allow_rules:
   - port: 8080
